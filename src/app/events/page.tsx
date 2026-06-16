@@ -21,12 +21,12 @@ function EventSection({ title, events }: { title: string; events: Event[] }) {
 
 function formatEventDateRange(start: string, end: string): string {
   const parse = (iso: string) => {
-    const [y, m, d] = iso.split('-').map(Number);
+    const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
     return new Date(y, m - 1, d);
   };
   const s = parse(start);
   const e = parse(end);
-  if (start === end) {
+  if (start.slice(0, 10) === end.slice(0, 10)) {
     return s.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   }
   if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()) {

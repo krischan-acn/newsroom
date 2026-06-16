@@ -28,9 +28,12 @@ export interface MegaMenuNavProps {
 // Either in types.ts or at top of MegaMenuNav.tsx
 export const DEFAULT_MEGA_MENU_ITEMS: MegaMenuItem[] = [
   { label: 'Company', href: '#', hasDropdown: true, megaMenuContent: 'company' },
-  { label: 'Region', href: '#', hasDropdown: true, megaMenuContent: 'region'},
+  { label: 'Region', href: '#', hasDropdown: true, megaMenuContent: 'region' },
+  { label: 'Country', href: '#', hasDropdown: true, megaMenuContent: 'country' },
+  { label: 'Exchange', href: '#' },
+  { label: 'Stock Codes', href: '#' },
   { label: 'Sector', href: '#', hasDropdown: true, megaMenuContent: 'sector' },
   { label: 'Industry', href: '#', hasDropdown: true, megaMenuContent: 'industry' },
-  { label: 'Language', href: '#', hasDropdown: true, megaMenuContent: 'language'},
+  { label: 'Language', href: '#', hasDropdown: true, megaMenuContent: 'language' },
   { label: 'Events', href: '/events' },
 ]

@@ -32,6 +32,8 @@ export function InfiniteArticleFeed({ firstId, firstArticle }: Props) {
   const [exhausted, setExhausted] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const articleRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const loadingRef = useRef(false);
+  const loadedIds = useRef(new Set<number>([firstId]));
 
   // Sentinel observer — triggers loading the next article
   useEffect(() => {
@@ -39,14 +41,16 @@ export function InfiniteArticleFeed({ firstId, firstArticle }: Props) {
 
     const observer = new IntersectionObserver(
       async ([entry]) => {
-        if (!entry.isIntersecting || loading) return;
+        if (!entry.isIntersecting || loadingRef.current) return;
+        loadingRef.current = true;
         setLoading(true);
 
         const mode = getReadingMode();
         const nextId = await getNextArticleId(lastId, mode);
 
-        if (!nextId) {
+        if (!nextId || loadedIds.current.has(nextId)) {
           setExhausted(true);
+          loadingRef.current = false;
           setLoading(false);
           return;
         }
@@ -54,6 +58,7 @@ export function InfiniteArticleFeed({ firstId, firstArticle }: Props) {
         const dataRes = await fetch(`/api/press-release/${nextId}`);
         if (!dataRes.ok) {
           setExhausted(true);
+          loadingRef.current = false;
           setLoading(false);
           return;
         }
@@ -70,10 +75,12 @@ export function InfiniteArticleFeed({ firstId, firstArticle }: Props) {
         const lang = languageToSlug(data.language ?? 'english');
         const urlPath = `/article/${lang}/${data.id}/${slug}`;
 
+        loadedIds.current.add(nextId);
         setArticles(prev => [...prev, { data, relatedArticles, urlPath }]);
         setLastId(nextId);
         window.history.replaceState(null, '', urlPath);
 
+        loadingRef.current = false;
         setLoading(false);
       },
       { rootMargin: '400px' }
@@ -81,7 +88,7 @@ export function InfiniteArticleFeed({ firstId, firstArticle }: Props) {
 
     if (sentinelRef.current) observer.observe(sentinelRef.current);
     return () => observer.disconnect();
-  }, [lastId, loading, exhausted]);
+  }, [lastId, exhausted]);
 
   // Viewport observer — keeps URL in sync while scrolling in either direction.
   // Uses a single shared observer with threshold:0 + rootMargin so the trigger

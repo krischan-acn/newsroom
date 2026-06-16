@@ -22,9 +22,9 @@ export function Body({ content, className = '' }: BodyProps) {
       'src', 'alt', 'class', 'href', 'target', 'rel', 'width', 'height', 'align', 'border', 'cellpadding', 'cellspacing'
     ],
   });
-  
+
   return (
-    <div 
+    <div
       className={`article-body prose prose-lg max-w-none ${className}`}
       dangerouslySetInnerHTML={{ __html: sanitizedContent }}
     />

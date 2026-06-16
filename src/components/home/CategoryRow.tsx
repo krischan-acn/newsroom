@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  useEffect,
   useRef,
   useState,
   useCallback,
@@ -15,31 +14,16 @@ import { formatDateTime } from '@/lib/utils';
 import { ShelfScrollBar } from './ShelfScrollBar';
 
 
-function PRCard({ pr, image: initialImage, label }: {
+function PRCard({ pr, label }: {
   pr: NewsListItem;
-  image: string | null;
   label: string;
 }) {
-  const [image, setImage] = useState<string | null>(initialImage);
-  const [isLogo, setIsLogo] = useState(!initialImage); // no photo = it'll be a logo
+  const isLogo = !pr.thumbImage;
+  const image = pr.thumbImage ?? pr.logoSrc ?? null;
   const [imgStyle, setImgStyle] = useState<CSSProperties>({
     width: "200px",
     height: "auto",
   });
-
-  useEffect(() => {
-    if (initialImage) return;
-    fetch(`/api/press-release/${pr.id}`)
-      .then(r => r.json())
-      .then(data => {
-        const logo = data?.companies?. [0]?.logofilename ?? null;
-        if (logo) {
-          setImage(logo);
-          setIsLogo(true);
-        }
-      })
-      .catch(() => {});
-  }, [pr.id, initialImage]);
 
   const handleLoad = useCallback((e: SyntheticEvent<HTMLImageElement>) => {
     if (isLogo) return;
@@ -103,9 +87,9 @@ function PRCard({ pr, image: initialImage, label }: {
           {pr.headline}
         </h3>
         <p className="mb-1 text-sm font-semibold text-[#2088c9]">
-          {pr.stock?. [0]?.companyName}
+          {pr.companyName}
         </p>
-        <p className="text-[10px] text-gray-400">{formatDateTime(pr.dateTime, pr.language)}</p>
+        <p className="text-[10px] text-gray-400">{formatDateTime(pr.dateTime)}</p>
       </div>
     </article>
   );
@@ -142,20 +126,15 @@ export function CategoryRow({
           tabIndex={0}
           className="scrollbar-hide -mx-6 flex items-center gap-6 overflow-x-auto px-6 pb-2"
         >
-          {items.map((pr) => {
-            const image = pr.photo?. [0] ?? null;
-            const label = pr.source;
-
-            return (
-              <Link
-                key={pr.id}
-                href={`/article/${pr.id}`}
-                className="shrink-0 self-start"
-              >
-                <PRCard pr={pr} image={image} label={label} />
-              </Link>
-            );
-          })}
+          {items.map((pr) => (
+            <Link
+              key={pr.id}
+              href={`/article/${pr.id}`}
+              className="shrink-0 self-start"
+            >
+              <PRCard pr={pr} label={pr.companyName} />
+            </Link>
+          ))}
         </div>
 
         <ShelfScrollBar scrollRef={scrollRef} />

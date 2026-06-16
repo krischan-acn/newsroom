@@ -12,13 +12,22 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&gt;/g, '>')
     .replace(/&nbsp;/g, ' ')
     .replace(/&apos;/g, "'")
-    .replace(/&ldquo;/g, '"')
-    .replace(/&rdquo;/g, '"')
-    .replace(/&lsquo;/g, "'")
-    .replace(/&rsquo;/g, "'")
+    .replace(/&ldquo;/g, '“')
+    .replace(/&rdquo;/g, '”')
+    .replace(/&lsquo;/g, '‘')
+    .replace(/&rsquo;/g, '’')
     .replace(/&mdash;/g, '—')
     .replace(/&ndash;/g, '–')
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec));
+    .replace(/&hellip;/g, '…')
+    .replace(/&copy;/g, '©')
+    .replace(/&reg;/g, '®')
+    .replace(/&trade;/g, '™')
+    .replace(/&bull;/g, '•')
+    .replace(/&middot;/g, '·')
+    .replace(/&laquo;/g, '«')
+    .replace(/&raquo;/g, '»')
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)));
 }
 
 // Strip all HTML tags (no DOM needed — just regex, safe for plain text fields)

@@ -156,8 +156,8 @@ export function HomeHero({ slides }: { slides: NewsListItem[] }) {
 }
 
 function Slide({ data, hidden }: { data: NewsListItem; hidden: boolean }) {
-  const image = data.photo?.[0] ?? null;
-  const description = data.subHeadline || data.summary || data.description || '';
+  const image = data.thumbImage ?? null;
+  const description = data.description || '';
   // data.subHeadline ?? data.bodyText ?? 
 
   return (

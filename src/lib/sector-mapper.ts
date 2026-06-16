@@ -1,18 +1,28 @@
 // src/lib/sector-mapper.ts
 import { SECTORS, SECTOR_TYPES } from './sectors';
 
-// Map API sector name → user-facing category (sector_type)
+// Map API sector name → user-facing category (sector_type).
+// 1. Exact match on sector_name  e.g. "BioTech" → "Medicine"
+// 2. Direct match on sector_type e.g. "Technology" → "Technology"
+// 3. Partial match: sector_name starts with the API value e.g. "Automation" → "Automation [IoT]" → "Technology"
+// 4. No match → '' (caller filters out empty strings, so the article appears in no row)
 export function getSectorCategory(apiSectorName: string): string {
-  const found = SECTORS.find(s => s.sector_name === apiSectorName);
-  return found?.sector_type || 'Business'; // Default fallback
+  if (!apiSectorName) return '';
+  const exact = SECTORS.find(s => s.sector_name === apiSectorName);
+  if (exact) return exact.sector_type;
+  const byType = SECTORS.find(s => s.sector_type === apiSectorName);
+  if (byType) return byType.sector_type;
+  const partial = SECTORS.find(s => s.sector_name.startsWith(apiSectorName) || apiSectorName.startsWith(s.sector_name));
+  return partial?.sector_type ?? '';
 }
 
 // For an article with multiple API sectors, get unique categories
-export function getArticleCategories(apiSectors: string[]): string[] {
-  if (!apiSectors || apiSectors.length === 0) return [];
+export function getArticleCategories(apiSectors: string | string[]): string[] {
+  if (!apiSectors || (Array.isArray(apiSectors) && apiSectors.length === 0)) return [];
   const categories = new Set<string>();
-  apiSectors.forEach(sector => {
-    categories.add(getSectorCategory(sector));
+  (Array.isArray(apiSectors) ? apiSectors : [apiSectors]).forEach(sector => {
+    const mapped = getSectorCategory(sector);
+    if (mapped) categories.add(mapped);
   });
   return Array.from(categories);
 }

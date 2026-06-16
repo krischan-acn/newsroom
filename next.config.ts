@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/_next/image',
+        headers: [{ key: 'Content-Disposition', value: 'inline' }],
+      },
+    ];
+  },
   async redirects() {
     return [
       { source: '/companies', destination: '/company', permanent: true },

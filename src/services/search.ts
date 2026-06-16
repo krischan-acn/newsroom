@@ -2,6 +2,7 @@ import articles from '@/data/prefetched-articles.json';
 import { getArticleCategories } from '@/lib/sector-mapper';
 import { getCountryInfo } from '@/lib/countries';
 import { INDUSTRY_HIERARCHY, REGION_LEAF_COUNTRIES } from '@/lib/filter-data';
+import { sanitizeText } from '@/lib/sanitize';
 
 const LANGUAGE_CODE_TO_RAW: Record<string, string[]> = {
   en: ['English'],
@@ -134,14 +135,7 @@ export function searchArticles({
       dateTime: a.dateTime,
       thumbImage: a.thumbImage,
       description: a.summary
-        ? a.summary
-            .replace(/<[^>]*>/g, '')
-            .replace(/&quot;/g, '"')
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .trim()
-            .slice(0, 200)
+        ? sanitizeText(a.summary).slice(0, 200)
         : null,
       companyName: a.companyName ?? '',
       companyLogo: a.companyLogo ?? null,

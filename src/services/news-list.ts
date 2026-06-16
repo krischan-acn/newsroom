@@ -1,116 +1,88 @@
 // services/news-list.ts
 // Lightweight list-feed fetcher for card rows on the home page.
-// Uses GetNewsByLanguage (langType=0 → ALL languages) as the "latest" feed.
-// Swap to /Sector/GetNewsBySector when a sector ID is chosen.
 
+import type { NewApiArticle } from './acn-api.types';
 import { sanitizeText, sanitizeHeadline } from '@/lib/sanitize';
 
-const API_BASE = 'https://www.acnnewswire.com/acnnewswireapi';
+const HOMEPAGE_URL = 'https://development.acnnewswire.com/api/articles/homepage';
+const BY_INDUSTRY_URL = 'https://development.acnnewswire.com/api/Articles/by-industry';
+const LOGO_BASE = 'https://www.acnnewswire.com/images/company/';
+const PHOTOS_BASE = 'https://photos.acnnewswire.com/';
 
 export interface NewsListItem {
   id: number;
   headline: string;
   dateTime: string;
-  source: string;
-  url: string;
-  photo: string[];
-  sector: string[];
-  stock?: Array<{ companyName: string }> | null;
-  language?: string | null;
-  summary?: string | null;
-  subHeadline?: string | null;
-  description?: string | null;
-}
-
-interface AcnListPhoto {
-  thumbImage: string | null;
-  bigImage: string | null;
-  caption: string | null;
-}
-
-interface AcnListArticle {
-  id: number;
-  headline: string | null;
-  subHeadline: string | null;
-  dateTime: string | null;
-  summary: string | null;
   description: string | null;
-  language: string | null;
-  source: string | null;
-  name: string | null;
-  url: string | null;
-  photo: AcnListPhoto[] | null;
-  sector: string[] | null;
-  topic: string | null;
-  views: string | null;
-  companies?: Array<{ logofilename?: string }> | null;
-  stock?: Array<{ companyName: string }> | null;
+  thumbImage: string | null;
+  logoSrc: string | null;
+  companyName: string;
+  companyId: number | null;
+  sector: string;
+}
+
+function dedupeById(items: NewsListItem[]): NewsListItem[] {
+  const seen = new Set<number>();
+  return items.filter(item => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
+function mapArticle(a: NewApiArticle): NewsListItem {
+  const company = a.companies[0] ?? null;
+  const bigImage = a.images?.[0]?.bigImage;
+  return {
+    id: a.articleId,
+    headline: sanitizeHeadline(a.headline),
+    dateTime: a.publishDate,
+    description: sanitizeText(a.summary),
+    thumbImage: bigImage ? `${PHOTOS_BASE}${bigImage}` : null,
+    logoSrc: company?.logoFileName ? `${LOGO_BASE}${company.logoFileName}` : null,
+    companyName: company?.companyName ?? '',
+    companyId: company?.companyID ?? null,
+    sector: a.sectorName ?? '',
+  };
 }
 
 export async function fetchNewsList(page = 1, limit = 20): Promise<NewsListItem[]> {
   const res = await fetch(
-    `${API_BASE}/api/v1/News/GetNewsByLanguage?langType=0&pageNumber=${page}&pageSize=${limit}`,
-    {
-      next: { revalidate: 3600 },
-      headers: { Accept: 'application/json' },
-    },
+    `${HOMEPAGE_URL}?Page=${page}&Size=${limit}`,
+    { next: { revalidate: 3600 } },
   );
 
   if (!res.ok) return [];
 
-  const raw: AcnListArticle[] = await res.json();
-
-  return raw.map((a) => ({
-    id: a.id,
-    headline: sanitizeHeadline(a.headline) ?? '',
-    dateTime: a.dateTime ?? '',
-    source: sanitizeText(a.source) ?? '',
-    url: a.url ?? '',
-    photo: (a.photo ?? [])
-      .map((p) => p.thumbImage ?? p.bigImage ?? null)
-      .filter((s): s is string => !!s),
-    sector: a.sector ?? [],
-    stock: a.stock ?? null,
-    language: a.language,
-    summary: sanitizeText(a.summary) ?? null,
-    subHeadline: sanitizeText(a.subHeadline) ?? null,
-    description: a.description
-      ? sanitizeText(a.description.replace(/<[^>]*>/g, '').trim().slice(0, 300))
-      : null,
-  }));
+  const raw: NewApiArticle[] = await res.json();
+  return dedupeById(raw.map(mapArticle));
 }
 
-export async function fetchLatestNews(pageSize = 10): Promise<NewsListItem[]> {
+export async function fetchLatestNews(): Promise<NewsListItem[]> {
+  const res = await fetch(HOMEPAGE_URL, { next: { revalidate: 3600 } });
+  if (!res.ok) return [];
+  const raw: NewApiArticle[] = await res.json();
+  return dedupeById(raw.map(mapArticle));
+}
+
+export async function fetchArticlesByIndustry(industry: string, pageSize = 10): Promise<NewsListItem[]> {
   const res = await fetch(
-    `${API_BASE}/api/v1/News/GetNewsByLanguage?langType=0&pageNumber=1&pageSize=${pageSize}`,
-    {
-      next: { revalidate: 3600 },
-      headers: { Accept: 'application/json' },
-    },
+    `${BY_INDUSTRY_URL}?industry=${encodeURIComponent(industry)}&pageNumber=1&pageSize=${pageSize}`,
+    { next: { revalidate: 3600 } },
   );
+  if (!res.ok) return [];
+  const raw: NewApiArticle[] = await res.json();
+  return dedupeById(raw.map(mapArticle));
+}
 
-  if (!res.ok) {
-    throw new Error(`API error ${res.status} (GetNewsByLanguage)`);
-  }
+// Fetches the homepage pool, filters to articles with images, returns up to `n`.
+export async function fetchHeroSlides(n = 5): Promise<NewsListItem[]> {
+  const res = await fetch(HOMEPAGE_URL, { next: { revalidate: 3600 } });
 
-  const raw: AcnListArticle[] = await res.json();
+  if (!res.ok) return [];
 
-  return raw.map((a) => ({
-    id: a.id,
-    headline: sanitizeHeadline(a.headline) ?? '',
-    dateTime: a.dateTime ?? '',
-    source: sanitizeText(a.source) ?? '',
-    url: a.url ?? '',
-    photo: (a.photo ?? [])
-      .map((p) => p.thumbImage ?? p.bigImage ?? null)
-      .filter((s): s is string => !!s),
-    sector: a.sector ?? [],
-    stock: a.stock ?? null,
-    language: a.language,
-    summary: sanitizeText(a.summary) ?? null,
-    subHeadline: sanitizeText(a.subHeadline) ?? null,
-    description: a.description
-      ? sanitizeText(a.description.replace(/<[^>]*>/g, '').trim().slice(0, 300))
-      : null,
-  }));
+  const raw: NewApiArticle[] = await res.json();
+  return dedupeById(
+    raw.filter(a => !!a.images?.[0]?.bigImage).slice(0, n).map(mapArticle),
+  );
 }

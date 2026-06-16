@@ -27,14 +27,14 @@ export async function getNextArticleId(
 async function getNextChronological(currentId: number): Promise<number | null> {
   try {
     const res = await fetch(
-      `https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage?langType=0&pageNumber=1&pageSize=20`,
+      `https://development.acnnewswire.com/api/Articles?Page=1&Size=20`,
       { next: { revalidate: 300 } }
     );
     if (!res.ok) return null;
-    const articles: { id: number }[] = await res.json();
-    const idx = articles.findIndex(a => a.id === currentId);
+    const articles: { articleId: number }[] = await res.json();
+    const idx = articles.findIndex(a => a.articleId === currentId);
     // articles are newest-first, so next chronologically = idx + 1
-    return idx !== -1 && idx + 1 < articles.length ? articles[idx + 1].id : null;
+    return idx !== -1 && idx + 1 < articles.length ? articles[idx + 1].articleId : null;
   } catch {
     return null;
   }

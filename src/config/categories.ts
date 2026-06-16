@@ -28,14 +28,20 @@ exploreLabel: 'Explore Communications',
   {
     slug: 'cryptocurrency',
     title: 'Cryptocurrency',
-exploreLabel: 'Explore Cryptocurrency',
-    matches: bySectorType('CryptoCurrency'),
+    exploreLabel: 'Explore Cryptocurrency',
+    matches: bySectorType('Cryptocurrency'),
   },
   {
     slug: 'finance',
     title: 'Finance',
-exploreLabel: 'Explore Finance',
+    exploreLabel: 'Explore Finance',
     matches: bySectorType('Financial'),
+  },
+  {
+    slug: 'industrial',
+    title: 'Industrial',
+    exploreLabel: 'Explore Industrial',
+    matches: bySectorType('Industrial'),
   },
   {
     slug: 'healthcare',

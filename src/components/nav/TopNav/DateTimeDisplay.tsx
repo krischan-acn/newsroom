@@ -23,10 +23,12 @@ function getZoneInfo(timeZone: string) {
 }
 
 export default function DateTimeDisplay() {
+  const [mounted, setMounted] = useState(false)
   const [tick, setTick] = useState(0)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
+    setMounted(true)
     const msToNextMinute = 60_000 - (Date.now() % 60_000)
     const timeout = setTimeout(() => {
       setTick(t => t + 1)
@@ -42,7 +44,7 @@ export default function DateTimeDisplay() {
   return (
     <p className="flex flex-row items-center gap-3 m-0 text-xs text-gray-400">
       {ZONES.map((zone, index) => {
-        const { day, time } = getZoneInfo(zone.timeZone)
+        const { day, time } = mounted ? getZoneInfo(zone.timeZone) : { day: '···', time: '··:··' }
         return (
           <Fragment key={zone.codes.join('/')}>
             <span className="flex items-center gap-1">

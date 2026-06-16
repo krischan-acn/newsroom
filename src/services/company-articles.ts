@@ -1,7 +1,10 @@
 // services/company-articles.ts
+import type { NewApiArticle } from './acn-api.types';
 import { sanitizeText, sanitizeHeadline } from '@/lib/sanitize';
 
-const API_BASE = 'https://www.acnnewswire.com/acnnewswireapi';
+const NEW_API_BASE = 'https://development.acnnewswire.com';
+const LOGO_BASE = 'https://www.acnnewswire.com/images/company/';
+const PHOTOS_BASE = 'https://photos.acnnewswire.com/';
 
 export interface CompanyArticle {
   id: number;
@@ -17,15 +20,15 @@ export interface CompanyPageData {
   logoSrc: string | null;
 }
 
-interface AcnCompanyArticle {
-  articleId: number;
-  headline: string | null;
-  summary: string | null;
-  dateTime: string | null;
-  views: string | null;
-  photo: Array<{ thumbImage: string | null; bigImage: string | null; caption: string | null }> | null;
-  companyLogo: string | null;
-  companyName?: string | null;
+function mapArticle(a: NewApiArticle): CompanyArticle {
+  const bigImage = a.images?.[0]?.bigImage;
+  return {
+    id: a.articleId,
+    headline: sanitizeHeadline(a.headline),
+    dateTime: a.publishDate,
+    thumbImage: bigImage ? `${PHOTOS_BASE}${bigImage}` : null,
+    description: sanitizeText(a.summary) || null,
+  };
 }
 
 export async function fetchCompanyArticles(
@@ -34,31 +37,14 @@ export async function fetchCompanyArticles(
   if (!compId) return [];
 
   const res = await fetch(
-    `${API_BASE}/api/v1/Company/GetNewsByCompanyId/${compId}`,
-    {
-      next: { revalidate: 3600 },
-      headers: { Accept: 'application/json' },
-    },
+    `${NEW_API_BASE}/api/Articles/by-company/${compId}`,
+    { next: { revalidate: 3600 } },
   );
 
   if (!res.ok) return [];
 
-  const raw: AcnCompanyArticle[] = await res.json();
-
-  return raw.slice(0, 4).map((a) => {
-    const rawDesc = a.summary ?? '';
-    const description = rawDesc
-      ? sanitizeText(rawDesc).slice(0,200)
-      : null;
-
-    return {
-      id: a.articleId,
-      headline: sanitizeHeadline(a.headline) ?? '',
-      dateTime: a.dateTime ?? '',
-      thumbImage: a.photo?.[0]?.thumbImage ?? a.photo?.[0]?.bigImage ?? null,
-      description,
-    };
-  });
+  const raw: NewApiArticle[] = await res.json();
+  return raw.slice(0, 5).map(mapArticle);
 }
 
 export async function fetchAllCompanyArticles(
@@ -67,52 +53,21 @@ export async function fetchAllCompanyArticles(
   if (!compId) return { articles: [], companyName: null, logoSrc: null };
 
   const res = await fetch(
-    `${API_BASE}/api/v1/Company/GetNewsByCompanyId/${compId}`,
-    {
-      next: { revalidate: 3600 },
-      headers: { Accept: 'application/json' },
-    },
+    `${NEW_API_BASE}/api/Articles?Cid=${compId}&Page=1&Size=50`,
+    { next: { revalidate: 3600 } },
   );
 
   if (!res.ok) return { articles: [], companyName: null, logoSrc: null };
 
-  const raw: AcnCompanyArticle[] = await res.json();
+  const raw: NewApiArticle[] = await res.json();
   const first = raw[0];
+  const firstCompany = first?.companies[0] ?? null;
 
-  const articles = raw.map((a) => {
-    const rawDesc = a.summary ?? '';
-    const description = rawDesc
-      ? sanitizeText(rawDesc).slice(0, 200)
-      : null;
-
-    return {
-      id: a.articleId,
-      headline: sanitizeHeadline(a.headline) ?? '',
-      dateTime: a.dateTime ?? '',
-      thumbImage: a.photo?.[0]?.thumbImage ?? a.photo?.[0]?.bigImage ?? null,
-      description,
-    };
-  });
-
-  // GetNewsByCompanyId does not reliably return companyName or logo —
-  // fetch the first article via GetArticleById which has companies[].logofilename.
-  let companyName: string | null = first?.companyName ?? null;
-  let logoSrc: string | null = null;
-
-  if (first) {
-    const articleRes = await fetch(
-      `${API_BASE}/api/v1/News/GetArticleById/${first.articleId}`,
-      { next: { revalidate: 3600 }, headers: { Accept: 'application/json' } },
-    );
-    if (articleRes.ok) {
-      const detail = await articleRes.json() as {
-        companies?: Array<{ comp_ID: string; company_Name: string; logofilename: string }>;
-      };
-      const company = detail.companies?.find(c => c.comp_ID === compId) ?? detail.companies?.[0];
-      companyName = company?.company_Name ?? companyName;
-      logoSrc = company?.logofilename ?? null;
-    }
-  }
-
-  return { articles, companyName, logoSrc };
+  return {
+    articles: raw.map(mapArticle),
+    companyName: firstCompany?.companyName ?? null,
+    logoSrc: firstCompany?.logoFileName
+      ? `${LOGO_BASE}${firstCompany.logoFileName}`
+      : null,
+  };
 }

@@ -42,12 +42,12 @@ export default async function NewsPage({ searchParams }: Props) {
                   id: article.id,
                   headline: article.headline,
                   dateTime: article.dateTime,
-                  thumbImage: article.photo[0] ?? null,
+                  thumbImage: article.thumbImage,
                   description: article.description ?? null,
                 }}
-                companyName={article.stock?.[0]?.companyName ?? article.source}
-                logoSrc={null}
-                sectors={article.sector.length > 0 ? article.sector : null}
+                companyName={article.companyName}
+                logoSrc={article.logoSrc}
+                sectors={article.sector ? [article.sector] : null}
                 showMeta
               />
             ))}

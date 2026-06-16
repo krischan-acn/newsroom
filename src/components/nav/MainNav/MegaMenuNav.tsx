@@ -8,6 +8,7 @@ import { DEFAULT_MEGA_MENU_ITEMS } from './types'
 
 import Company from './Company'
 import Region from './Region'
+import Country from './Country'
 import Sector from './Sector'
 import Industry from './Industry'
 import Language from './Language'
@@ -117,6 +118,7 @@ export default function MegaMenuNav({
               >
                 {activeMenu === 'company' && <Company onClose={() => onMenuHover?.(null)} />}
                 {activeMenu === 'region' && <Region onClose={() => onMenuHover?.(null)} />}
+                {activeMenu === 'country' && <Country onClose={() => onMenuHover?.(null)} />}
                 {activeMenu === 'sector' && <Sector onClose={() => onMenuHover?.(null)} />}
                 {activeMenu === 'industry' && <Industry onClose={() => onMenuHover?.(null)} />}
                 {activeMenu === 'language' && <Language onClose={() => onMenuHover?.(null)} />}

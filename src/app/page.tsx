@@ -3,34 +3,29 @@ import { CategoryRow } from '@/components/home/CategoryRow';
 import { EventsRow } from '@/components/home/EventsRow';
 import { FeaturedReleases, type FeaturedItem } from '@/components/home/FeaturedReleases';
 import { CATEGORIES } from '@/config/categories';
-import { fetchLatestNews, type NewsListItem } from '@/services/news-list';
+import { fetchArticlesByIndustry, fetchHeroSlides, type NewsListItem } from '@/services/news-list';
 import { fetchEvents, type Event } from '@/services/events';
 import { fetchPressRelease } from '@/services/press-release';
 import type { PressReleaseData } from '@/components/press-release/types';
 
 export default async function Home() {
-  let newsItems: NewsListItem[] = [];
-  let events: Event[] = [];
-  let featured: PressReleaseData | null = null;
-  let article107246: PressReleaseData | null = null;
-  let article107300: PressReleaseData | null = null;
-  let article107292: PressReleaseData | null = null;
-  let article107230: PressReleaseData | null = null;
-
-  try {
-    [newsItems, events, featured, article107246, article107300, article107292, article107230] = await Promise.all([
-      fetchLatestNews(60),
-      fetchEvents(),
-      fetchPressRelease(85791),
-      fetchPressRelease(107246),
-      fetchPressRelease(107300),
-      fetchPressRelease(107292),
-      fetchPressRelease(107230),
-    ]);
-  } catch {
-    newsItems = [];
-    events = [];
-  }
+  const [
+    [heroSlides, events, featured, article107246, article107300, article107292, article107230],
+    categoryItems,
+  ] = await Promise.all([
+    Promise.all([
+      fetchHeroSlides(5).catch((): NewsListItem[] => []),
+      fetchEvents().catch((): Event[] => []),
+      fetchPressRelease(85791).catch((): PressReleaseData | null => null),
+      fetchPressRelease(107246).catch((): PressReleaseData | null => null),
+      fetchPressRelease(107300).catch((): PressReleaseData | null => null),
+      fetchPressRelease(107292).catch((): PressReleaseData | null => null),
+      fetchPressRelease(107230).catch((): PressReleaseData | null => null),
+    ]),
+    Promise.all(
+      CATEGORIES.map(cat => fetchArticlesByIndustry(cat.slug).catch((): NewsListItem[] => [])),
+    ),
+  ]);
 
   const featuredImageUrl = '/images/sector/environment/1.avif';
 
@@ -42,10 +37,6 @@ export default async function Home() {
     ...(article107292 ? [{ ...article107292, photo: ['/images/city/hong-kong.avif'], companyName: cn(article107292) }] : []),
     ...(article107230 ? [{ ...article107230, companyName: cn(article107230) }] : []),
   ];
-
-  const heroSlides = newsItems
-    .filter(item => item.photo.length > 0)
-    .slice(0, 5);
 
   return (
     <main>
@@ -59,12 +50,12 @@ export default async function Home() {
           articles={featuredArticles}
         />
       )}
-      {CATEGORIES.map((category) => (
+      {CATEGORIES.map((category, i) => (
         <CategoryRow
           key={category.slug}
           title={category.title}
           exploreLabel={category.exploreLabel}
-          items={newsItems.filter(category.matches)}
+          items={categoryItems[i] ?? []}
         />
       ))}
     </main>

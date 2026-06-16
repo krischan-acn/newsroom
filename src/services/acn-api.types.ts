@@ -1,62 +1,60 @@
 // services/acn-api.types.ts
-// These types describe what the OLD API actually returns.
-// Do not use these anywhere except the adapter below.
+// Types for the new development API response shape.
 
-export interface AcnPhoto {
-  thumbImage: string;
-  bigImage: string;
-  caption: string;
-}
-
-export interface AcnStock {
-  companyName: string;
-  url: string;
-  exchangeName: string;
-  bloombergCode: string;
-  reutersCode: string;
-  quoteMediaCode: string;
-  ticker: string;
-  isin: string;
-}
-
-export interface AcnCompany {
-  comp_ID: string;
-  company_Name: string;
-  companyNameCH?: string;
-  companyNameCT?: string;
-  companyNameJP?: string;
-  companyNameKO?: string;
-  issuer?: string;
-  logofilename: string;
-  url: string;
-  facebook?: string;
-  twitter?: string;
-  youtube?: string;
-  linkedin?: string;
-  telegram?: string;
-}
-
-export interface AcnLocation {
-  name: string;
-  sub_Location: string;
-}
-
-export interface AcnPressRelease {
-  id: number;
+export interface NewApiArticle {
+  articleId: number;
   headline: string;
-  subHeadline: string;
-  dateTime: string;
-  bodyText: string;
-  bodyHtml: string;
-  language: string;
-  source: string;
-  supplier: string;
-  location: AcnLocation;
-  url: string;
-  photo: AcnPhoto[];
-  sector: string[];
-  topic: string;
-  views: string;
-  companies: AcnCompany[];
-  stock: AcnStock[] | null;
+  publishDate: string;
+  summary: string;
+  hasImage: boolean;
+  hasFile: boolean;
+  sectorName?: string;
+  companies: {
+    companyID: number;
+    logoFileName: string | null;
+    companyName: string;
+    companyURL: string | null;
+    companyNameCH: string | null;
+    companyNameCT: string | null;
+    companyNameJP: string | null;
+    companyNameKO: string | null;
+  }[];
+  images: {
+    thumbImage: string;
+    bigImage: string;
+    caption: string;
+  }[];
+}
+
+export interface NewApiPressRelease {
+  articleId: number;
+  headline: string;
+  subHeadLine: string | null;
+  body: string | null;
+  bodyText: string | null;
+  bodyHtml: string | null;
+  publishDate: string;
+  summary: string | null;
+  sourceId: number;
+  hasImage: boolean;
+  hasFile: boolean;
+  sectorName: string | null;
+  language?: string | null;
+  companies: {
+    companyID: number;
+    topLogoFileName: string | null;
+    logoFileName: string | null;
+    companyURL: string | null;
+    companyName: string | null;
+    sectorName: string | null;
+    companyNameCH: string | null;
+    companyNameCT: string | null;
+    companyNameJP: string | null;
+    companyNameKO: string | null;
+  }[];
+  images: {
+    thumbImage: string;
+    bigImage: string;
+    caption: string;
+  }[];
 }

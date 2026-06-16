@@ -44,7 +44,9 @@ export function EventsRow({ events }: { events: Event[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const today = new Date().toISOString().slice(0, 10);
-  const upcoming = events.filter((e) => e.startDate >= today);
+  const upcoming = events
+    .filter((e) => e.startDate >= today)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
 
   if (upcoming.length === 0) return null;
 
