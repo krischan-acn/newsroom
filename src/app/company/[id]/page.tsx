@@ -67,7 +67,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="container mx-auto px-4 py-6 max-w-7xl min-h-125">
+      <div className="container mx-auto px-4 py-6 max-w-7xl min-h-125 lg:px-8 py-8">
         <div className="flex flex-col-reverse lg:flex-row lg:items-start gap-8 lg:gap-12">
           {/* Main column: who they are, then everything they have published. */}
           <div className="flex-1 min-w-0">

@@ -12,8 +12,8 @@ import {
   RAIL_PILL,
   RailSection,
   RailRow,
-  RailExternalLink,
 } from '@/components/ui/Rail';
+import { SocialLinks, type SocialLink } from '@/components/ui/SocialLinks';
 import type { PressReleaseData } from './types';
 import type { ReleaseVersion } from '@/services/release-versions';
 import { RELEASE_VERSIONS_SUPPORTED } from '@/services/release-versions';
@@ -86,18 +86,15 @@ function ReleaseVersions({ versions }: { versions: ReleaseVersion[] }) {
 
 export function ArticleSidebar({ data, versions }: Props) {
   const company = data.companies?.[0];
-  const socialCandidates: [string, string | undefined][] = company
-    ? [
-        ['Facebook', company.facebook],
-        ['X', company.twitter],
-        ['LinkedIn', company.linkedin],
-        ['YouTube', company.youtube],
-        ['Telegram', company.telegram],
-      ]
+  const socials: SocialLink[] = company
+    ? ([
+        { label: 'Facebook', url: company.facebook },
+        { label: 'X', url: company.twitter },
+        { label: 'LinkedIn', url: company.linkedin },
+        { label: 'YouTube', url: company.youtube },
+        { label: 'Telegram', url: company.telegram },
+      ].filter(s => Boolean(s.url)) as SocialLink[])
     : [];
-  const socials = socialCandidates.filter(
-    (entry): entry is [string, string] => Boolean(entry[1]),
-  );
 
   // sub_Location is the city, name the country: "TOKYO, Japan".
   const place = [data.location?.sub_Location, data.location?.name]
@@ -167,13 +164,7 @@ export function ArticleSidebar({ data, versions }: Props) {
 
         {socials.length > 0 && (
           <RailSection title="Follow">
-            <div className="flex flex-wrap gap-x-3 gap-y-1">
-              {socials.map(([label, url]) => (
-                <RailExternalLink key={label} href={url}>
-                  {label}
-                </RailExternalLink>
-              ))}
-            </div>
+            <SocialLinks links={socials} withLabels />
           </RailSection>
         )}
       </div>

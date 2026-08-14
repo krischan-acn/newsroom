@@ -12,6 +12,7 @@ import {
   RailRow,
   RailExternalLink,
 } from '@/components/ui/Rail';
+import { SocialLinks } from '@/components/ui/SocialLinks';
 import { toDisplayUrl, type CompanyProfile } from '@/services/company-profile';
 
 function IdentityCard({ profile }: { profile: CompanyProfile }) {
@@ -96,15 +97,7 @@ function ContactCard({ profile }: { profile: CompanyProfile }) {
             divided
             block
             label="Follow"
-            value={
-              <div className="flex flex-wrap gap-x-3 gap-y-1">
-                {profile.socials.map(social => (
-                  <RailExternalLink key={social.label} href={social.url}>
-                    {social.label}
-                  </RailExternalLink>
-                ))}
-              </div>
-            }
+            value={<SocialLinks links={profile.socials} />}
           />
         )}
       </dl>

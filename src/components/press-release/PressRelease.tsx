@@ -28,13 +28,13 @@ export function PressRelease({
   return (
     <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${className}`}>
       <div className="flex flex-col lg:flex-row lg:items-start gap-8 lg:gap-10">
-        {/* The release itself keeps the reading measure it had before the rail
-            was added — the column is capped rather than filling the wider shell. */}
+        {/* Fills the shell rather than sitting at a capped measure: with a
+            320px rail beside it, a cap left dead space to its right and made
+            the release read narrower than it did before the rail existed. */}
         <article className="flex-1 min-w-0">
           <Hero
             headline={data.headline}
             subHeadline={data.subHeadline}
-            sectors={data.sector}
             source={data.source}
             dateTime={data.dateTime}
             language={data.language}

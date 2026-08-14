@@ -6,11 +6,8 @@ import { useState } from 'react';
 import { LanguageTag } from '@/components/ui/LanguageTag';
 
 interface HeroProps {
-  logo?: string | null;
-  companyName: string;
   headline: string;
   subHeadline?: string | null;
-  sectors?: string[];
   source?: string;
   dateTime?: string | null;
   language?: string | null;
@@ -43,20 +40,14 @@ function LogoMark({ src, alt }: { src: string; alt: string }) {
 }
 
 export function Hero({
-  logo,
-  companyName,
   headline,
   subHeadline,
-  sectors,
   source,
   dateTime,
   language,
   className = '',
 }: HeroProps) {
   const tagParts: string[] = [];
-  if (sectors && sectors.length) {
-    tagParts.push(...sectors);
-  }
   if (source) {
     tagParts.push(`Source: ${source}`);
   }
