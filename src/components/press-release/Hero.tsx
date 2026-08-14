@@ -3,6 +3,7 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
+import { LanguageTag } from '@/components/ui/LanguageTag';
 
 interface HeroProps {
   logo?: string | null;
@@ -12,6 +13,7 @@ interface HeroProps {
   sectors?: string[];
   source?: string;
   dateTime?: string | null;
+  language?: string | null;
   className?: string;
 }
 
@@ -48,6 +50,7 @@ export function Hero({
   sectors,
   source,
   dateTime,
+  language,
   className = '',
 }: HeroProps) {
   const tagParts: string[] = [];
@@ -82,8 +85,8 @@ export function Hero({
         </p>
       )}
 
-      {tagParts.length > 0 && (
-        <p className="mt-6 text-xs md:text-sm uppercase text-gray-400">
+      {(tagParts.length > 0 || language) && (
+        <div className="mt-6 flex flex-wrap items-center gap-y-2 text-xs md:text-sm uppercase text-gray-400">
           {tagParts.map((part, i) => (
             <span key={i}>
               {i > 0 && <span className="mx-2 text-gray-400">•</span>}
@@ -92,7 +95,13 @@ export function Hero({
               </span>
             </span>
           ))}
-        </p>
+          {language && (
+            <>
+              {tagParts.length > 0 && <span className="mx-2 text-gray-400">•</span>}
+              <LanguageTag value={language} />
+            </>
+          )}
+        </div>
       )}
 
       <hr className="mt-6 border-gray-200" />

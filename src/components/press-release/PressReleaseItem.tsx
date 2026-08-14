@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { formatDateTime } from '@/lib/utils';
+import { LanguageTag } from '@/components/ui/LanguageTag';
 
 import type { CompanyArticle } from '@/services/company-articles';
 
@@ -58,7 +59,7 @@ export function PressReleaseItem({ article, companyName, logoSrc: initialLogoSrc
         <h3 className="text-md text-gray-800 font-medium leading-snug line-clamp-1 group-hover:text-[#2088c9] transition-colors">
           {article.headline}
         </h3>
-        <div className="flex flex-row gap-2 mt-0.5">
+        <div className="flex flex-row flex-wrap items-center gap-2 mt-0.5">
           {showMeta && companyName && (
             <>
               <p className="text-xs font-medium text-gray-600">
@@ -68,8 +69,14 @@ export function PressReleaseItem({ article, companyName, logoSrc: initialLogoSrc
             </>
           )}
           <p className="text-xs text-gray-400">
-            {formatDateTime(article.dateTime)}
+            {formatDateTime(article.dateTime, article.language)}
           </p>
+          {article.language && (
+            <>
+              <span className="text-xs text-gray-400">•</span>
+              <LanguageTag value={article.language} />
+            </>
+          )}
         </div>
 
         {showMeta && sectors && sectors.length > 0 && (

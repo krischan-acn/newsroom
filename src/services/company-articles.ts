@@ -12,6 +12,10 @@ export interface CompanyArticle {
   dateTime: string;
   thumbImage: string | null;
   description: string | null;
+  // The list endpoints (/api/Articles, /api/Articles/by-company) do not return
+  // a language field, so this is only populated on paths that have one — today
+  // that means search results. Rows without it simply render no tag.
+  language?: string | null;
 }
 
 export interface CompanyPageData {

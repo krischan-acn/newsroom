@@ -1,10 +1,12 @@
 // press-release/ArticleMeta.tsx
 import Link from 'next/link';
+import { LanguageTag } from '@/components/ui/LanguageTag';
 
 interface ArticleMetaProps {
   topic?: string;
   sectors?: string[];
   source?: string;
+  language?: string | null;
   // TODO: replace hardcoded defaults once the API provides region/country fields
   region?: string;
   country?: string;
@@ -24,6 +26,7 @@ export function ArticleMeta({
   topic,
   sectors,
   source,
+  language,
   region = 'East Asia',
   country = 'Japan',
   className = '',
@@ -34,6 +37,14 @@ export function ArticleMeta({
       <Row label="Region" value={region} />
       <Row label="Country" value={country} />
       {source && <Row label="Source" value={source} />}
+      {language && (
+        <div className="flex gap-2 items-center">
+          <dt className="text-gray-600">Language:</dt>
+          <dd>
+            <LanguageTag value={language} withLabel />
+          </dd>
+        </div>
+      )}
       {sectors && sectors.length > 0 && (
         <div className="flex gap-2">
           <dt className="text-gray-600">Sectors:</dt>

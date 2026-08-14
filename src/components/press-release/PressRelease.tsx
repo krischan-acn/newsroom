@@ -28,6 +28,7 @@ export function PressRelease({ data, relatedArticles = [], className = '' }: Pre
         sectors={data.sector}
         source={data.source}
         dateTime={data.dateTime}
+        language={data.language}
       />
 
       <ShareBar headline={data.headline} />
@@ -40,6 +41,7 @@ export function PressRelease({ data, relatedArticles = [], className = '' }: Pre
         topic={data.topic}
         sectors={data.sector}
         source={data.source}
+        language={data.language}
       />
 
       <ArticleFooterLink views={data.views} />

@@ -1,4 +1,6 @@
 // /lib/utils.ts
+import { timezoneFor } from './languages';
+
 export function decodeHtmlEntities(str: string): string {
   if (typeof window === 'undefined') {
     return str
@@ -19,17 +21,11 @@ export function decodeHtmlEntities(str: string): string {
   return txt.value;
 }
 
-// lib/utils.ts — add to your existing file
-const TIMEZONE_BY_LANGUAGE: Record<string, string> = {
-  'Japanese': 'JST',
-  'Korean': 'KST',
-  'Simplified Chinese': 'CST',
-  'Traditional Chinese': 'HKT/SGT',
-  'English': 'HKT/SGT',
-};
-
 export function formatDateTime(raw: string, language?: string | null): string {
-  const tz = TIMEZONE_BY_LANGUAGE[language ?? ''] ?? 'HKT/SGT';
+  // Resolved through the language registry so "zh-Hans", "Simplified Chinese"
+  // and "zh_CN" all yield CST. The old exact-match table silently fell back to
+  // HKT/SGT whenever the API used a code instead of a display name.
+  const tz = timezoneFor(language);
 
   // ISO format: "2026-06-05T12:14:00"
   const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);

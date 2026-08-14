@@ -3,14 +3,12 @@ import { getArticleCategories } from '@/lib/sector-mapper';
 import { getCountryInfo } from '@/lib/countries';
 import { INDUSTRY_HIERARCHY, REGION_LEAF_COUNTRIES } from '@/lib/filter-data';
 import { sanitizeText } from '@/lib/sanitize';
+import { resolveLanguage, type LanguageId } from '@/lib/languages';
 
-const LANGUAGE_CODE_TO_RAW: Record<string, string[]> = {
-  en: ['English'],
-  ja: ['Japanese'],
-  ko: ['Korean'],
-  'zh-Hant': ['Traditional Chinese', 'zh-Hant'],
-  'zh-Hans': ['Simplified Chinese', 'zh-Hans'],
-};
+// Language filtering compares canonical ids on both sides rather than exact raw
+// strings, so a ?lang=zh-Hant query matches articles tagged "Traditional
+// Chinese", "zh-Hant" or "zh_TW" alike. The previous hardcoded string list
+// missed any spelling it had not been told about.
 
 // Sidebar display names → actual sector_type values used by getArticleCategories()
 const DISPLAY_TO_TYPE: Record<string, string> = {
@@ -66,6 +64,8 @@ export interface SearchResult {
   companyName: string;
   companyLogo: string | null;
   sectors: string[];
+  /** Raw upstream spelling; normalised for display by <LanguageTag>. */
+  language: string | null;
 }
 
 export function searchArticles({
@@ -85,7 +85,11 @@ export function searchArticles({
 }): { articles: SearchResult[]; total: number } {
   const raw = articles as unknown as PrefetchedArticle[];
   const qLower = q.toLowerCase();
-  const rawLanguages = languages.flatMap((code) => LANGUAGE_CODE_TO_RAW[code] ?? []);
+  const selectedLanguageIds = new Set(
+    languages
+      .map((code) => resolveLanguage(code)?.id)
+      .filter((id): id is LanguageId => Boolean(id)),
+  );
 
   const filtered = raw.filter((article) => {
     const matchesQuery =
@@ -105,8 +109,10 @@ export function searchArticles({
         return (article.sectors ?? []).includes(s);
       });
 
+    const articleLanguageId = resolveLanguage(article.rawLanguage)?.id;
     const matchesLanguage =
-      rawLanguages.length === 0 || rawLanguages.includes(article.rawLanguage);
+      selectedLanguageIds.size === 0 ||
+      (articleLanguageId !== undefined && selectedLanguageIds.has(articleLanguageId));
 
     const articleLocation = article.location ?? '';
     const countryInfo = getCountryInfo(articleLocation);
@@ -140,6 +146,7 @@ export function searchArticles({
       companyName: a.companyName ?? '',
       companyLogo: a.companyLogo ?? null,
       sectors: a.sectors ?? [],
+      language: a.rawLanguage ?? null,
     })),
     total,
   };

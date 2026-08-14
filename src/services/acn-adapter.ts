@@ -5,6 +5,7 @@ import type { NewApiPressRelease } from './acn-api.types';
 import type { PressReleaseData } from '@/components/press-release/types';
 import { slugify } from 'transliteration';
 import { sanitizeText, sanitizeHeadline } from '@/lib/sanitize';
+import { slugFor } from '@/lib/languages';
 
 const LOGO_BASE = 'https://www.acnnewswire.com/images/company/';
 
@@ -43,8 +44,14 @@ export function adaptNewApiPressRelease(raw: NewApiPressRelease): PressReleaseDa
 }
 
 // Utility: "Japanese" → "japanese", "Simplified Chinese" → "simplified-chinese"
+//
+// Resolved through the language registry rather than lowercased blindly. The
+// old version turned "Traditional Chinese" into "traditional-chinese" but
+// "zh-Hant" into "zh-hant" — two canonical URLs for one article, so whenever
+// the API changed spelling the /article route redirected to a different
+// address and the canonical link churned.
 export function languageToSlug(language: string): string {
-  return language.toLowerCase().replace(/\s+/g, '-');
+  return slugFor(language);
 }
 
 // Utility: clean SEO slug from headline

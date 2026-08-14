@@ -11,14 +11,16 @@ import {
   getAncestorIds,
   getLeafIds,
 } from '@/lib/filter-data';
+import { LANGUAGES as LANGUAGE_REGISTRY } from '@/lib/languages';
+import { LanguageTag } from '@/components/ui/LanguageTag';
 
-const LANGUAGES = [
-  { code: 'en', label: 'English' },
-  { code: 'ja', label: 'Japanese' },
-  { code: 'ko', label: 'Korean' },
-  { code: 'zh-Hant', label: 'Traditional Chinese' },
-  { code: 'zh-Hans', label: 'Simplified Chinese' },
-];
+// Derived from the language registry so the filter codes, the labels and the
+// tags rendered on results can never drift apart.
+const LANGUAGES = LANGUAGE_REGISTRY.map((l) => ({
+  code: l.searchCode,
+  label: l.label,
+  id: l.id,
+}));
 
 interface SearchSidebarProps {
   activeSectors: string[];
@@ -153,8 +155,8 @@ export function SearchSidebar({
       <div>
         <h3 className="text-sm font-medium text-black">Language</h3>
         <ul className="space-y-2.5 mt-2">
-          {LANGUAGES.map(({ code, label }) => (
-            <li key={code}>
+          {LANGUAGES.map(({ code, label, id }) => (
+            <li key={code} className="flex items-center justify-between gap-2">
               <label className="flex items-center gap-2.5 text-sm text-gray-700 cursor-pointer hover:text-gray-900 select-none">
                 <input
                   type="checkbox"
@@ -164,6 +166,7 @@ export function SearchSidebar({
                 />
                 {label}
               </label>
+              <LanguageTag value={id} />
             </li>
           ))}
         </ul>
