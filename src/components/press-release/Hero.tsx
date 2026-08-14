@@ -71,10 +71,6 @@ export function Hero({
 
   return (
     <header className={`mb-8 ${className}`}>
-      <div className="mb-6">
-        <LogoMark src={logo || ''} alt={companyName} />
-      </div>
-
       <h1 className="mb-8 text-3xl md:text-4xl lg:text-5xl text-gray-900 leading-tight">
         {headline}
       </h1>

@@ -32,6 +32,7 @@ function dedupeById(items: NewsListItem[]): NewsListItem[] {
 
 function mapArticle(a: NewApiArticle): NewsListItem {
   const company = a.companies[0] ?? null;
+  const logoFilename = company?.logoFilename ?? company?.logoFileName ?? null;
   const bigImage = a.images?.[0]?.bigImage;
   return {
     id: a.articleId,
@@ -39,9 +40,12 @@ function mapArticle(a: NewApiArticle): NewsListItem {
     dateTime: a.publishDate,
     description: sanitizeText(a.summary),
     thumbImage: bigImage ? `${PHOTOS_BASE}${bigImage}` : null,
-    logoSrc: company?.logoFileName ? `${LOGO_BASE}${company.logoFileName}` : null,
+    // These endpoints return companyId/logoFilename; the single-article endpoint
+    // returns companyID/logoFileName. Read both so the logo and the company link
+    // survive whichever casing the API hands back.
+    logoSrc: logoFilename ? `${LOGO_BASE}${logoFilename}` : null,
     companyName: company?.companyName ?? '',
-    companyId: company?.companyID ?? null,
+    companyId: company?.companyId ?? company?.companyID ?? null,
     sector: a.sectorName ?? '',
   };
 }

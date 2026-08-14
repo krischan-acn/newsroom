@@ -28,6 +28,8 @@ export interface PressReleaseData {
   dateTime: string;
   bodyText?: string;
   bodyHtml: string;
+  /** Editor-written abstract, shown as the sidebar's release summary. */
+  summary?: string | null;
   language?: string;
   source: string;
   supplier: string;

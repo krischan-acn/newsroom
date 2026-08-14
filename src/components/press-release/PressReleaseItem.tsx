@@ -51,8 +51,12 @@ export function PressReleaseItem({ article, companyName, logoSrc: initialLogoSrc
         </div>
       )}
 
-      {/* Divider */}
-      <div className="w-px bg-gray-200 shrink-0 self-stretch mx-1" />
+      {/* Divider — only meaningful when it separates a logo from the text.
+          Without this guard it renders as a stray rule down the left edge on
+          feeds that hide the logo column, such as the company page. */}
+      {!hideLogo && logoSrc && (
+        <div className="w-px bg-gray-200 shrink-0 self-stretch mx-1" />
+      )}
 
       {/* Content */}
       <div className="flex-1 min-w-0 px-4 py-2 flex flex-col justify-center gap-2">

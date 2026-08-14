@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { PressReleaseData } from '@/components/press-release/types';
-import type { CompanyPageData } from '@/services/company-articles';
+import type { CompanyProfile } from '@/services/company-profile';
 import { headlineToSlug, languageToSlug } from '@/services/acn-adapter';
 
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.acnnewswire.com';
@@ -120,14 +120,18 @@ export function generateListingMetadata(
   };
 }
 
-export function generateCompanyMetadata(company: CompanyPageData, id: string): Metadata {
-  const name = company.companyName ?? `Company ${id}`;
+export function generateCompanyMetadata(
+  profile: CompanyProfile | null,
+  id: string,
+): Metadata {
+  const name = profile?.name ?? `Company ${id}`;
   const title = `${name} Press Releases`;
-  const description = `Browse the latest press releases from ${name} on ACN Newswire.`;
+  const description =
+    profile?.description[0]?.slice(0, 160) ||
+    `Browse the latest press releases from ${name} on ACN Newswire.`;
   const canonical = `${SITE_URL}/company/${id}`;
-  const logoUrl = company.logoSrc
-    ? `https://www.acnnewswire.com/images/company/${company.logoSrc}`
-    : null;
+  // logoSrc is already an absolute URL on CompanyProfile.
+  const logoUrl = profile?.logoSrc ?? null;
 
   return {
     title,

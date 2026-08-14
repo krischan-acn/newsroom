@@ -5,6 +5,7 @@ import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { PressRelease, InfiniteArticleFeed } from '@/components/press-release';
 import { fetchPressRelease } from '@/services/press-release';
 import { fetchCompanyArticles } from '@/services/company-articles';
+import { fetchReleaseVersions } from '@/services/release-versions';
 import { headlineToSlug, languageToSlug } from '@/services/acn-adapter';
 import { generateArticleMetadata, SITE_URL, SITE_NAME } from '@/lib/metadata';
 
@@ -68,7 +69,10 @@ export default async function ArticlePage({ params }: Props) {
     }
 
     // Fetch related articles after the redirect check — compId is only known from data
-    const relatedArticles = await fetchCompanyArticles(data.companies?.[0]?.comp_ID);
+    const [relatedArticles, versions] = await Promise.all([
+      fetchCompanyArticles(data.companies?.[0]?.comp_ID),
+      fetchReleaseVersions({ id: data.id, headline: data.headline, language: data.language }),
+    ]);
 
     const canonical = `${SITE_URL}/article/${correctLang}/${data.id}/${correctSlug}`;
     const jsonLd = {
@@ -95,7 +99,11 @@ export default async function ArticlePage({ params }: Props) {
         />
         <main>
           <div id="article-first-wrapper">
-            <PressRelease data={data} relatedArticles={relatedArticles} />
+            <PressRelease
+              data={data}
+              relatedArticles={relatedArticles}
+              versions={versions}
+            />
           </div>
           <InfiniteArticleFeed
             firstId={data.id}
