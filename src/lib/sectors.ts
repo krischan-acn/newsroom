@@ -1,12 +1,29 @@
 // src/lib/sectors.ts
-// ACN Newswire sector taxonomy — static master list
-// Source: ACN internal sector classification
-// Structure: Category (sector_type) → Sector (sector_name) with multilingual names
+// ACN Newswire classification — static master list
+// Source: ACN internal classification
+//
+// ⚠ THE FIELD NAMES IN THIS FILE ARE ONE LEVEL OFF FROM THE BUSINESS TERMS.
+//
+// They are the old database's column names, and they mean:
+//
+//     sector_type   →  SECTOR    "Industrial", "Technology"        (9 of them)
+//     sector_name   →  INDUSTRY  "Construct Engineering"          (76 of them)
+//
+// So the real structure is SECTOR > INDUSTRY. The nav already says this — there
+// is a Sector menu listing the 9 and an Industry menu listing the 76 — only
+// this data layer disagrees.
+//
+// New code should import from lib/taxonomy.ts, which puts the correct names on
+// this same data (derived, not copied, so the two cannot drift). This file stays
+// as-is until every call site has moved; see docs/taxonomy-migration.md for the
+// ordered steps and for what the new API should send instead.
 
 export interface Sector {
   id: number
-  sector_type: string       // The category grouping e.g. "Technology", "Financial"
-  sector_name: string       // Internal name / English display name
+  /** @deprecated This is the SECTOR. Use `Industry.sector` from lib/taxonomy.ts. */
+  sector_type: string       // e.g. "Technology", "Financial"
+  /** @deprecated This is the INDUSTRY. Use `Industry.industry` from lib/taxonomy.ts. */
+  sector_name: string       // e.g. "Construct Engineering"
   name_en: string
   name_ja: string | null
   name_zh_hans: string | null
@@ -118,10 +135,17 @@ export const SECTORS: Sector[] = [
 
 ]
 
-// All unique sector types for grouping in the UI
+/**
+ * All unique sectors, for grouping in the UI.
+ * @deprecated Use `SECTOR_KEYS` (internal keys) or `SECTOR_LIST` (keys with
+ * their labels and industries) from lib/taxonomy.ts.
+ */
 export const SECTOR_TYPES = [...new Set(SECTORS.map(s => s.sector_type))]
 
-// Search helper — searches sector_name and sector_type, case-insensitive
+/**
+ * Search helper — searches industry and sector names, case-insensitive.
+ * @deprecated Use `searchTaxonomy()` from lib/taxonomy.ts.
+ */
 export function searchSectors(query: string): Sector[] {
   if (!query.trim()) return SECTORS
   const q = query.toLowerCase()
@@ -133,7 +157,11 @@ export function searchSectors(query: string): Sector[] {
   )
 }
 
-// Get all sectors for a given type
+/**
+ * Get all industries under a given sector.
+ * @deprecated Use `industriesOf()` from lib/taxonomy.ts, which also accepts the
+ * UI label ("Finance") and is punctuation-insensitive.
+ */
 export function getSectorsByType(type: string): Sector[] {
   return SECTORS.filter(s => s.sector_type === type)
 }

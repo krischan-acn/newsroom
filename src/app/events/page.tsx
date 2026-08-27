@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { fetchEvents, type Event } from '@/services/events';
 import { generateListingMetadata } from '@/lib/metadata';
+import { listMockEvents, type MockEvent } from '@/data/mock-events';
+import { EventListCard } from '@/components/events/EventListCard';
 
 export const metadata: Metadata = generateListingMetadata('events');
 
@@ -99,8 +101,38 @@ function EventItem({ event }: { event: Event }) {
   );
 }
 
+/**
+ * Events that have a full page on this site — countdown, details and the
+ * releases filed against them. Sample data for now; see data/mock-events.ts.
+ */
+function FeaturedEventSection({
+  title,
+  note,
+  events,
+}: {
+  title: string;
+  note?: string;
+  events: MockEvent[];
+}) {
+  if (events.length === 0) return null;
+  return (
+    <section className="mb-10">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-lg font-semibold text-gray-700">{title}</h2>
+        {note && <p className="text-xs text-gray-400">{note}</p>}
+      </div>
+      <div className="divide-y divide-gray-100 border-y border-gray-100">
+        {events.map((event) => (
+          <EventListCard key={event.slug} event={event} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default async function EventsPage() {
   const events = await fetchEvents();
+  const featured = listMockEvents(Date.now());
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -116,14 +148,24 @@ export default async function EventsPage() {
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       <h1 className="text-3xl tracking-tight text-black mb-8">Events</h1>
 
+      <FeaturedEventSection
+        title="Featured Events"
+        note="Full event pages with live countdown and linked press releases"
+        events={featured.upcoming}
+      />
+
       {events.length === 0 ? (
-        <p className="text-gray-500 py-8">No events scheduled.</p>
+        featured.upcoming.length === 0 && featured.past.length === 0 && (
+          <p className="text-gray-500 py-8">No events scheduled.</p>
+        )
       ) : (
         <>
           <EventSection title="Upcoming Events" events={upcoming} />
           <EventSection title="Past Events" events={past} />
         </>
       )}
+
+      <FeaturedEventSection title="Featured Archive" events={featured.past} />
     </div>
   );
 }

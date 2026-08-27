@@ -1,0 +1,266 @@
+﻿entity,schema,endpoint,field,nested_in,json_type,nullable_observed,sample_value,source,notes
+Event,events,https://development.acnnewswire.com/api/Events?pageNumber=1&pageSize=100,id,,integer,no,1121,live,
+Event,events,https://development.acnnewswire.com/api/Events?pageNumber=1&pageSize=100,startDate,,string,no,2026-09-02T00:00:00,live,
+Event,events,https://development.acnnewswire.com/api/Events?pageNumber=1&pageSize=100,endDate,,string,no,2026-09-04T00:00:00,live,
+Event,events,https://development.acnnewswire.com/api/Events?pageNumber=1&pageSize=100,description,,string,no,BEX Asia 2026,live,
+Event,events,https://development.acnnewswire.com/api/Events?pageNumber=1&pageSize=100,location,,string,no,Singapore,live,
+Event,events,https://development.acnnewswire.com/api/Events?pageNumber=1&pageSize=100,url,,string,no,www.bex-asia.com,live,
+Event,events,https://development.acnnewswire.com/api/Events?pageNumber=1&pageSize=100,inUrl,,string,yes,events.asp?compid=7750&yr=2026&page_num=1,live,
+Event,events,https://development.acnnewswire.com/api/Events?pageNumber=1&pageSize=100,eventImage,,string,no,bexasia2026.jpg,live,
+Event,events,https://development.acnnewswire.com/api/Events?pageNumber=1&pageSize=100,lid,,string,no,2,live,
+Event,events,https://development.acnnewswire.com/api/Events?pageNumber=1&pageSize=100,publish,,string,no,y,live,
+Event,events,https://development.acnnewswire.com/api/Events?pageNumber=1&pageSize=100,compId,,null,yes,,live,
+Event,events,https://development.acnnewswire.com/api/Events?pageNumber=1&pageSize=100,companies,,array[empty],no,,live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},articleId,,integer,no,109486,live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},headline,,string,no,The 4th International &amp; Indonesia CCS Forum 2026 Strengthens Indonesia&apos;s Position as an Emerging Regional CCS Hub,live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},subHeadLine,,string,yes,,live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},body,,null,yes,,live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},bodyText,,string,no,Indonesia is strengthening its position as one of the Asia-Pacific&apos;s most promising markets for Carbon Capture and Storage (CCS) development. As the country moves from policy  ...[truncated],live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},bodyHtml,,string,no,"<p style=""text-align: justify;""><strong>JAKARTA, Aug 27, 2026 - (ACN Newswire) -&nbsp;</strong>Indonesia is strengthening its position as one of the Asia-Pacific's most promising m ...[truncated]",live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},publishDate,,string,no,2026-08-27T17:00:00,live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},summary,,string,no,Indonesia is strengthening its position as one of the Asia-Pacific&apos;s most promising markets for Carbon Capture and Storage (CCS) development.,live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},sourceId,,integer,no,2,live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},hasImage,,boolean,no,false,live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},hasFile,,boolean,no,false,live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},companies,,array[object],no,"[{""companyID"": 2198, ""topLogoFileName"": ""PTPertamina35.jpg"", ""logoFileName"": ""PTPertamina.jpg"", ""companyURL"": ""www.pertamina.com/en"", ""companyName"": ""PT Pertamina"", ""sectorName"": "" ...[truncated]",live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},images,,array[object],no,"[{""thumbImage"": """", ""bigImage"": ""20260827.CCS_1.jpg"", ""caption"": """"}, {""thumbImage"": """", ""bigImage"": ""20260827.CCS_2.jpg"", ""caption"": """"}]",live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},sectors,,string,no,"[""Energy, Alternatives"",""Environment, ESG"",""Alternative Energy"",""ASEAN"",""Oil & Gas""]",live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},topicName,,string,no,Press release summary,live,
+Article,article-detail,https://development.acnnewswire.com/api/Articles/press-release/{id},sourceName,,string,no,ACN Newswire,live,
+Article (list),article-list-homepage,https://development.acnnewswire.com/api/articles/homepage?Page&Size,articleId,,integer,no,109486,live,
+Article (list),article-list-homepage,https://development.acnnewswire.com/api/articles/homepage?Page&Size,headline,,string,no,The 4th International &amp; Indonesia CCS Forum 2026 Strengthens Indonesia&apos;s Position as an Emerging Regional CCS Hub,live,
+Article (list),article-list-homepage,https://development.acnnewswire.com/api/articles/homepage?Page&Size,publishDate,,string,no,2026-08-27T17:00:00,live,
+Article (list),article-list-homepage,https://development.acnnewswire.com/api/articles/homepage?Page&Size,summary,,string,yes,Indonesia is strengthening its position as one of the Asia-Pacific&apos;s most promising markets for Carbon Capture and Storage (CCS) development.,live,
+Article (list),article-list-homepage,https://development.acnnewswire.com/api/articles/homepage?Page&Size,sourceId,,integer,no,2,live,
+Article (list),article-list-homepage,https://development.acnnewswire.com/api/articles/homepage?Page&Size,hasImage,,boolean,no,false,live,
+Article (list),article-list-homepage,https://development.acnnewswire.com/api/articles/homepage?Page&Size,hasFile,,boolean,no,false,live,
+Article (list),article-list-homepage,https://development.acnnewswire.com/api/articles/homepage?Page&Size,sectorName,,string,no,Automotive,live,
+Article (list),article-list-homepage,https://development.acnnewswire.com/api/articles/homepage?Page&Size,companies,,array[object],no,"[{""companyID"": 2198, ""topLogoFileName"": ""PTPertamina35.jpg"", ""logoFileName"": ""PTPertamina.jpg"", ""companyURL"": ""www.pertamina.com/en"", ""companyName"": ""PT Pertamina"", ""sectorName"": "" ...[truncated]",live,
+Article (list),article-list-homepage,https://development.acnnewswire.com/api/articles/homepage?Page&Size,images,,array[object],no,"[{""thumbImage"": """", ""bigImage"": ""20260827.CCS_1.jpg"", ""caption"": """"}, {""thumbImage"": """", ""bigImage"": ""20260827.CCS_2.jpg"", ""caption"": """"}]",live,
+Article (list),article-list-by-industry,https://development.acnnewswire.com/api/Articles/by-industry?industry&pageNumber&pageSize,articleId,,integer,no,109485,live,
+Article (list),article-list-by-industry,https://development.acnnewswire.com/api/Articles/by-industry?industry&pageNumber&pageSize,headline,,string,no,GA-ASI and Fujitsu sign MOU for the maintenance and operation of unmanned aircraft systems in Japan,live,
+Article (list),article-list-by-industry,https://development.acnnewswire.com/api/Articles/by-industry?industry&pageNumber&pageSize,publishDate,,string,no,2026-08-27T14:04:00,live,
+Article (list),article-list-by-industry,https://development.acnnewswire.com/api/Articles/by-industry?industry&pageNumber&pageSize,summary,,string,no,"General Atomics Aeronautical Systems, Inc.(GA-ASI) [1] and Fujitsu Limited (Fujitsu) [2] today announced that they have signed a Memorandum of Understanding (MOU) regarding the est ...[truncated]",live,
+Article (list),article-list-by-industry,https://development.acnnewswire.com/api/Articles/by-industry?industry&pageNumber&pageSize,sourceId,,integer,no,3,live,
+Article (list),article-list-by-industry,https://development.acnnewswire.com/api/Articles/by-industry?industry&pageNumber&pageSize,hasImage,,boolean,no,false,live,
+Article (list),article-list-by-industry,https://development.acnnewswire.com/api/Articles/by-industry?industry&pageNumber&pageSize,hasFile,,boolean,no,false,live,
+Article (list),article-list-by-industry,https://development.acnnewswire.com/api/Articles/by-industry?industry&pageNumber&pageSize,sectorName,,string,no,Technology,live,
+Article (list),article-list-by-industry,https://development.acnnewswire.com/api/Articles/by-industry?industry&pageNumber&pageSize,companies,,array[object],no,"[{""companyID"": 16, ""topLogoFileName"": ""Fujitsu.Logo.68.jpg"", ""logoFileName"": ""Fujitsu.Logo.260.jpg"", ""companyURL"": ""www.fujitsu.com"", ""companyName"": ""Fujitsu Ltd"", ""sectorName"": ""T ...[truncated]",live,
+Article (list),article-list-by-industry,https://development.acnnewswire.com/api/Articles/by-industry?industry&pageNumber&pageSize,images,,array[object],no,"[{""thumbImage"": """", ""bigImage"": ""GA-ASI_and_Fujitsu_MOU.jpg"", ""caption"": """"}, {""thumbImage"": """", ""bigImage"": ""GA-ASI_MQ-9B.jpg"", ""caption"": """"}]",live,
+Article (list),article-list-paged,https://development.acnnewswire.com/api/Articles?Page&Size,articleId,,integer,no,109491,live,
+Article (list),article-list-paged,https://development.acnnewswire.com/api/Articles?Page&Size,headline,,string,no,Reconova Technologies Interim Results,live,
+Article (list),article-list-paged,https://development.acnnewswire.com/api/Articles?Page&Size,publishDate,,string,no,2026-08-27T19:18:00,live,
+Article (list),article-list-paged,https://development.acnnewswire.com/api/Articles?Page&Size,summary,,string,no,"Reconova Technologies Co., Ltd. (&quot;Reconova&quot; or the &quot;Company&quot;, Stock code: 7656.HK) today released its first interim results since its listing.",live,
+Article (list),article-list-paged,https://development.acnnewswire.com/api/Articles?Page&Size,hasImage,,boolean,no,false,live,
+Article (list),article-list-paged,https://development.acnnewswire.com/api/Articles?Page&Size,imageUrl,,null,yes,,live,
+Article (list),article-list-paged,https://development.acnnewswire.com/api/Articles?Page&Size,language,,string,no,EN,live,
+Article (list),article-list-paged,https://development.acnnewswire.com/api/Articles?Page&Size,companies,,array[object],no,"[{""companyId"": 9993, ""companyName"": ""Reconova Technologies Co., Ltd."", ""logoFilename"": ""Reconova220px.jpg""}]",live,
+Article (list),article-list-paged,https://development.acnnewswire.com/api/Articles?Page&Size,images,,array[object],no,"[{""thumbImage"": """", ""bigImage"": ""20260827.CCS_1.jpg"", ""caption"": """"}, {""thumbImage"": """", ""bigImage"": ""20260827.CCS_2.jpg"", ""caption"": """"}]",live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,articleId,,integer,no,109382,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,headline,,string,no,三菱重工サーマルシステムズ、大型車両向け電動式輸送用冷凍機「TEUシリーズ」を販売開始,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,publishDate,,string,no,2026-08-25T11:30:00,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,summary,,string,yes,"Mitsubishi Motors Corporation (hereafter, Mitsubishi Motors) announced that Mitsubishi Motors Philippines Corporation (MMPC), its subsidiary in the Philippines, began sales of the  ...[truncated]",live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,sourceId,,integer,no,3,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,hasImage,,boolean,no,false,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,hasFile,,boolean,no,false,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,bodyText,,string,no,三菱重工グループの三菱重工サーマルシステムズ株式会社（社長：伊藤 喜啓、本社：東京都千代田区、以下、三菱重工サーマルシステムズ）は、電動式輸送用冷凍機「Preciso（プレサイゾ）シリーズ」の新ラインアップとして、「TEUシリーズ」の販売を欧州で開始しました。欧州の販売会社であるMitsubishi Heavy Industries Thermal Tran ...[truncated],live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,bodyHtml,,string,no,"<p style=""text-align: justify;""><strong>東京, 2026年8月25日 - (JCN Newswire) -</strong>&nbsp;三菱重工グループの三菱重工サーマルシステムズ株式会社（社長：伊藤 喜啓、本社：東京都千代田区、以下、三菱重工サーマルシステムズ）は、電動式輸送用冷凍機「Preciso（プレサイゾ）シリ ...[truncated]",live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,companyId,,integer,no,82,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,topLogoFileName,,string,no,MHI_newT.jpg,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,logoFileName,,string,no,MHI_new.jpg,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,companyURL,,string,no,www.mhi.com,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,companyName,,string,no,Mitsubishi Heavy Industries (MHI),live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,sectorName,,string,no,Business,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,companyNameCH,,string,no,Mitsubishi Heavy Industries (MHI),live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,companyNameCT,,string,no,Mitsubishi Heavy Industries (MHI),live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,companyNameJP,,string,no,Mitsubishi Heavy Industries (MHI),live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,companyNameKO,,string,yes,Mitsubishi Heavy Industries (MHI),live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,country,,string,no,Japan,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,exchangeId,,integer,no,34,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,exchangeIdent,,string,no,XFRA,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,exchangeName,,string,no,Frankfurt Stock exchange,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,bloombergId,,integer,no,34,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,bloombergCode,,string,no,GR,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,reutersId,,integer,no,34,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,reutersCode,,string,no,F,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,yahooCode,,string,no,F,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,googleCode,,string,no,FRA,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,financialContentCode,,string,no,FRA,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,ticker,,string,no,MIH,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,bloomberg,,string,yes,,live,
+Article + Company,article-search,https://development.acnnewswire.com/api/Articles/search?CompanyName&Page&Size,reuters,,string,yes,,live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},companyId,,integer,no,82,live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},companyNameEN,,string,no,Mitsubishi Heavy Industries (MHI),live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},companyNameCH,,string,no,Mitsubishi Heavy Industries (MHI),live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},companyNameCT,,string,no,Mitsubishi Heavy Industries (MHI),live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},companyNameJP,,string,no,Mitsubishi Heavy Industries (MHI),live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},companyNameKO,,string,no,Mitsubishi Heavy Industries (MHI),live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},logoFilename,,string,no,MHI_new.jpg,live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},topLogoFilename,,string,no,MHI_newT.jpg,live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},boilerPlate,,string,no,"Mitsubishi Heavy Industries (MHI) Group (TSE: 7011; US: MHVYF) is one of the world&apos;s leading industrial firms. For more than 130 years, we have channeled big thinking into sol ...[truncated]",live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},extBoilerPlate,,string,yes,,live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},reportFilename,,null,yes,,live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},reportFileDate,,null,yes,,live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},reportFileSize,,null,yes,,live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},username,,string,no,<redacted - see _gaps.csv SEC-01>,live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},password,,string,no,<redacted - see _gaps.csv SEC-01>,live,
+Company,company,https://development.acnnewswire.com/api/Companies/{id},url,,string,no,www.mhi.com,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,established,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,listed,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,employees,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,dunsNumber,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,otc,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,marketId,,string,no,1,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,urlJa,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,blog,,string,no,https://www.mhi.com/rss/,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,facebook,,string,no,https://www.facebook.com/mhi.ltd/,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,twitter,,string,no,https://twitter.com/MHI_Group,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,linkedIn,,string,no,https://www.linkedin.com/company/mitsubishi-heavy-industries/,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,youTube,,string,no,https://www.youtube.com/user/DiscoverMHI,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,telegram,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,addr1,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,addr2,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,addr3,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,addr4,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,telephone,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,facsimile,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,email,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,pos1Name,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,pos1Desc,,string,no,CEO,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,pos2Name,,string,yes,,live,
+Company,company-details,https://development.acnnewswire.com/api/Companies/{id}/details,pos2Desc,,string,no,CEO,live,
+Article.companies[],article-companies-nested,(nested) article-detail.companies[],companyID,article-detail.companies[],integer,no,2198,live,
+Article.companies[],article-companies-nested,(nested) article-detail.companies[],topLogoFileName,article-detail.companies[],string,no,PTPertamina35.jpg,live,
+Article.companies[],article-companies-nested,(nested) article-detail.companies[],logoFileName,article-detail.companies[],string,no,PTPertamina.jpg,live,
+Article.companies[],article-companies-nested,(nested) article-detail.companies[],companyURL,article-detail.companies[],string,no,www.pertamina.com/en,live,
+Article.companies[],article-companies-nested,(nested) article-detail.companies[],companyName,article-detail.companies[],string,no,PT Pertamina,live,
+Article.companies[],article-companies-nested,(nested) article-detail.companies[],sectorName,article-detail.companies[],string,yes,Automotive,live,
+Article.companies[],article-companies-nested,(nested) article-detail.companies[],companyNameCH,article-detail.companies[],string,no,PT Pertamina,live,
+Article.companies[],article-companies-nested,(nested) article-detail.companies[],companyNameCT,article-detail.companies[],string,no,PT Pertamina,live,
+Article.companies[],article-companies-nested,(nested) article-detail.companies[],companyNameJP,article-detail.companies[],string,no,PT Pertamina,live,
+Article.companies[],article-companies-nested,(nested) article-detail.companies[],companyNameKO,article-detail.companies[],string,no,PT Pertamina,live,
+Article.images[],article-images-nested,(nested) article-detail.images[],thumbImage,article-detail.images[],string,yes,,live,
+Article.images[],article-images-nested,(nested) article-detail.images[],bigImage,article-detail.images[],string,no,20260827.CCS_1.jpg,live,
+Article.images[],article-images-nested,(nested) article-detail.images[],caption,article-detail.images[],string,yes,,live,
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},id,,integer/int32,no,109486,spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},headline,,string,yes,GA-ASI and Fujitsu sign MOU for unmanned aircraft systems in Japan,spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},subHeadline,,string,yes,Maintenance and operation partnership,spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},dateTime,,string,yes,"Thu, 27 Aug 2026 14:04",spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},bodyText,,string,yes,Indonesia is strengthening its position as one of the Asia-Pacific markets for CCS...,spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},bodyHtml,,string,yes,"<p><strong>JAKARTA, Aug 27, 2026 - (ACN Newswire) - </strong>...</p>",spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},language,,string,yes,English,spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},source,,string,yes,ACN Newswire,spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},supplier,,string,yes,ACN,spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},location,,object -> LocationModelCustom,no,Singapore,spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},url,,string,yes,www.bex-asia.com,spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},photo,,array[ArticleImageCustomModel],yes,bexasia2026.jpg,spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},sector,,array[string],yes,"[""Oil & Gas"",""ASEAN""]",spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},topic,,string,yes,Press release summary,spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},views,,string,yes,603,spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},companies,,array[CompanyModel],yes,"[{""comp_ID"":""82"",""company_Name"":""Mitsubishi Heavy Industries (MHI)""}]",spec,from swagger.json ArticleDescription
+Article,legacy-article-detail,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetArticleById/{artId},stock,,array[TickerCustomModel],yes,"[{""ticker"":""MIH"",""exchangeName"":""Frankfurt Stock exchange""}]",spec,from swagger.json ArticleDescription
+Article,legacy-company-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetNewsByCompanyId/{companyId},articleId,,integer/int32,no,109486,spec,from swagger.json CompanyNews
+Article,legacy-company-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetNewsByCompanyId/{companyId},headline,,string,yes,GA-ASI and Fujitsu sign MOU for unmanned aircraft systems in Japan,spec,from swagger.json CompanyNews
+Article,legacy-company-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetNewsByCompanyId/{companyId},summary,,string,yes,General Atomics Aeronautical Systems and Fujitsu today announced...,spec,from swagger.json CompanyNews
+Article,legacy-company-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetNewsByCompanyId/{companyId},dateTime,,string,yes,"Thu, 27 Aug 2026 14:04",spec,from swagger.json CompanyNews
+Article,legacy-company-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetNewsByCompanyId/{companyId},views,,string,yes,603,spec,from swagger.json CompanyNews
+Article,legacy-company-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetNewsByCompanyId/{companyId},photo,,array[ArticleImageCustomModel],yes,bexasia2026.jpg,spec,from swagger.json CompanyNews
+Article,legacy-company-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetNewsByCompanyId/{companyId},companyLogo,,string,yes,MHI_new.jpg,spec,from swagger.json CompanyNews
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,comp_ID,,string,yes,82,spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,company_Name,,string,yes,Mitsubishi Heavy Industries (MHI),spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,companyNameCH,,string,yes,Mitsubishi Heavy Industries (MHI),spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,companyNameCT,,string,yes,Mitsubishi Heavy Industries (MHI),spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,companyNameJP,,string,yes,Mitsubishi Heavy Industries (MHI),spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,companyNameKO,,string,yes,Mitsubishi Heavy Industries (MHI),spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,issuer,,string,yes,7011,spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,logofilename,,string,yes,MHI_new.jpg,spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,url,,string,yes,www.bex-asia.com,spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,facebook,,string,yes,https://www.facebook.com/mhi.ltd/,spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,twitter,,string,yes,https://twitter.com/MHI_Group,spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,youtube,,string,yes,https://www.youtube.com/user/DiscoverMHI,spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,linkedin,,string,yes,https://www.linkedin.com/company/mitsubishi-heavy-industries/,spec,from swagger.json CompanyModel
+Company,legacy-company,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetAllCompany,telegram,,string,yes,,spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,comp_ID,,string,yes,82,spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,company_Name,,string,yes,Mitsubishi Heavy Industries (MHI),spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,companyNameCH,,string,yes,Mitsubishi Heavy Industries (MHI),spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,companyNameCT,,string,yes,Mitsubishi Heavy Industries (MHI),spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,companyNameJP,,string,yes,Mitsubishi Heavy Industries (MHI),spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,companyNameKO,,string,yes,Mitsubishi Heavy Industries (MHI),spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,issuer,,string,yes,7011,spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,logofilename,,string,yes,MHI_new.jpg,spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,url,,string,yes,www.bex-asia.com,spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,facebook,,string,yes,https://www.facebook.com/mhi.ltd/,spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,twitter,,string,yes,https://twitter.com/MHI_Group,spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,youtube,,string,yes,https://www.youtube.com/user/DiscoverMHI,spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,linkedin,,string,yes,https://www.linkedin.com/company/mitsubishi-heavy-industries/,spec,from swagger.json CompanyModel
+Company,legacy-company-by-alphabet,https://www.acnnewswire.com/acnnewswireapi/api/v1/Company/GetCompanyByAlphabet,telegram,,string,yes,,spec,from swagger.json CompanyModel
+Event,legacy-event,https://www.acnnewswire.com/acnnewswireapi/api/v1/Event/GetAllEvent,id,,integer/int32,no,109486,spec,from swagger.json EventsModel
+Event,legacy-event,https://www.acnnewswire.com/acnnewswireapi/api/v1/Event/GetAllEvent,startDate,,string,yes,2026-09-02T00:00:00,spec,from swagger.json EventsModel
+Event,legacy-event,https://www.acnnewswire.com/acnnewswireapi/api/v1/Event/GetAllEvent,endDate,,string,yes,2026-09-04T00:00:00,spec,from swagger.json EventsModel
+Event,legacy-event,https://www.acnnewswire.com/acnnewswireapi/api/v1/Event/GetAllEvent,description,,string,yes,BEX Asia 2026,spec,from swagger.json EventsModel
+Event,legacy-event,https://www.acnnewswire.com/acnnewswireapi/api/v1/Event/GetAllEvent,location,,string,yes,Singapore,spec,from swagger.json EventsModel
+Event,legacy-event,https://www.acnnewswire.com/acnnewswireapi/api/v1/Event/GetAllEvent,url,,string,yes,www.bex-asia.com,spec,from swagger.json EventsModel
+Event,legacy-event,https://www.acnnewswire.com/acnnewswireapi/api/v1/Event/GetAllEvent,photo,,string,yes,bexasia2026.jpg,spec,from swagger.json EventsModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,id,,integer/int32,no,109486,spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,headline,,string,yes,GA-ASI and Fujitsu sign MOU for unmanned aircraft systems in Japan,spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,subHeadline,,string,yes,Maintenance and operation partnership,spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,dateTime,,string,yes,"Thu, 27 Aug 2026 14:04",spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,summary,,string,yes,General Atomics Aeronautical Systems and Fujitsu today announced...,spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,description,,string,yes,BEX Asia 2026,spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,language,,string,yes,English,spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,source,,string,yes,ACN Newswire,spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,name,,string,yes,Japan,spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,url,,string,yes,www.bex-asia.com,spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,photo,,array[ArticleImageCustomModel],yes,bexasia2026.jpg,spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,sector,,array[string],yes,"[""Oil & Gas"",""ASEAN""]",spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,topic,,string,yes,Press release summary,spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,views,,string,yes,603,spec,from swagger.json ArticleCustomModel
+Article,legacy-news-by-language,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/GetNewsByLanguage,stock,,array[TickerCustomModel],yes,"[{""ticker"":""MIH"",""exchangeName"":""Frankfurt Stock exchange""}]",spec,from swagger.json ArticleCustomModel
+Article,legacy-search-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/SearchNews,articleId,,integer/int32,no,109486,spec,from swagger.json SearchNews
+Article,legacy-search-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/SearchNews,headline,,string,yes,GA-ASI and Fujitsu sign MOU for unmanned aircraft systems in Japan,spec,from swagger.json SearchNews
+Article,legacy-search-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/SearchNews,summary,,string,yes,General Atomics Aeronautical Systems and Fujitsu today announced...,spec,from swagger.json SearchNews
+Article,legacy-search-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/SearchNews,dateTime,,string,yes,"Thu, 27 Aug 2026 14:04",spec,from swagger.json SearchNews
+Article,legacy-search-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/News/SearchNews,photo,,array[ArticleImageCustomModel],yes,bexasia2026.jpg,spec,from swagger.json SearchNews
+Article,legacy-featured-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Photo/GetFeaturedNews,articleId,,integer/int32,no,109486,spec,from swagger.json PhotoNews
+Article,legacy-featured-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Photo/GetFeaturedNews,headline,,string,yes,GA-ASI and Fujitsu sign MOU for unmanned aircraft systems in Japan,spec,from swagger.json PhotoNews
+Article,legacy-featured-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Photo/GetFeaturedNews,summary,,string,yes,General Atomics Aeronautical Systems and Fujitsu today announced...,spec,from swagger.json PhotoNews
+Article,legacy-featured-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Photo/GetFeaturedNews,dateTime,,string,yes,"Thu, 27 Aug 2026 14:04",spec,from swagger.json PhotoNews
+Article,legacy-featured-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Photo/GetFeaturedNews,photo,,array[ArticleImageCustomModel],yes,bexasia2026.jpg,spec,from swagger.json PhotoNews
+Article,legacy-photo-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Photo/GetPhotoNews,articleId,,integer/int32,no,109486,spec,from swagger.json PhotoNews
+Article,legacy-photo-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Photo/GetPhotoNews,headline,,string,yes,GA-ASI and Fujitsu sign MOU for unmanned aircraft systems in Japan,spec,from swagger.json PhotoNews
+Article,legacy-photo-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Photo/GetPhotoNews,summary,,string,yes,General Atomics Aeronautical Systems and Fujitsu today announced...,spec,from swagger.json PhotoNews
+Article,legacy-photo-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Photo/GetPhotoNews,dateTime,,string,yes,"Thu, 27 Aug 2026 14:04",spec,from swagger.json PhotoNews
+Article,legacy-photo-news,https://www.acnnewswire.com/acnnewswireapi/api/v1/Photo/GetPhotoNews,photo,,array[ArticleImageCustomModel],yes,bexasia2026.jpg,spec,from swagger.json PhotoNews
+Article,legacy-news-by-sector,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetNewsBySector,articleId,,integer/int32,no,109486,spec,from swagger.json SectorNews
+Article,legacy-news-by-sector,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetNewsBySector,headline,,string,yes,GA-ASI and Fujitsu sign MOU for unmanned aircraft systems in Japan,spec,from swagger.json SectorNews
+Article,legacy-news-by-sector,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetNewsBySector,summary,,string,yes,General Atomics Aeronautical Systems and Fujitsu today announced...,spec,from swagger.json SectorNews
+Article,legacy-news-by-sector,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetNewsBySector,dateTime,,string,yes,"Thu, 27 Aug 2026 14:04",spec,from swagger.json SectorNews
+Article,legacy-news-by-sector,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetNewsBySector,photo,,array[ArticleImageCustomModel],yes,bexasia2026.jpg,spec,from swagger.json SectorNews
+Article,legacy-news-by-industry,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetNewsbyIndustry,articleId,,integer/int32,no,109486,spec,from swagger.json SectorNews
+Article,legacy-news-by-industry,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetNewsbyIndustry,headline,,string,yes,GA-ASI and Fujitsu sign MOU for unmanned aircraft systems in Japan,spec,from swagger.json SectorNews
+Article,legacy-news-by-industry,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetNewsbyIndustry,summary,,string,yes,General Atomics Aeronautical Systems and Fujitsu today announced...,spec,from swagger.json SectorNews
+Article,legacy-news-by-industry,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetNewsbyIndustry,dateTime,,string,yes,"Thu, 27 Aug 2026 14:04",spec,from swagger.json SectorNews
+Article,legacy-news-by-industry,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetNewsbyIndustry,photo,,array[ArticleImageCustomModel],yes,bexasia2026.jpg,spec,from swagger.json SectorNews
+Sector,legacy-sectors,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetSectors,id,,integer/int32,no,109486,spec,from swagger.json SectorNameModel
+Sector,legacy-sectors,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetSectors,name,,string,yes,Japan,spec,from swagger.json SectorNameModel
+Sector,legacy-sectors,https://www.acnnewswire.com/acnnewswireapi/api/v1/Sector/GetSectors,industry,,array[IndustryModel],yes,"[{""id"":33,""name"":""Construct Engineering""}]",spec,from swagger.json SectorNameModel
+Article.photo[],legacy-articleimagecustommodel,(nested type),thumbImage,,string,yes,,spec,from swagger.json ArticleImageCustomModel
+Article.photo[],legacy-articleimagecustommodel,(nested type),bigImage,,string,yes,20260827.CCS_1.jpg,spec,from swagger.json ArticleImageCustomModel
+Article.photo[],legacy-articleimagecustommodel,(nested type),caption,,string,yes,,spec,from swagger.json ArticleImageCustomModel
+Article.location,legacy-locationmodelcustom,(nested type),name,,string,yes,Japan,spec,from swagger.json LocationModelCustom
+Article.location,legacy-locationmodelcustom,(nested type),sub_Location,,string,yes,TOKYO,spec,from swagger.json LocationModelCustom
+Article.stock[],legacy-tickercustommodel,(nested type),companyName,,string,yes,Mitsubishi Heavy Industries (MHI),spec,from swagger.json TickerCustomModel
+Article.stock[],legacy-tickercustommodel,(nested type),url,,string,yes,www.bex-asia.com,spec,from swagger.json TickerCustomModel
+Article.stock[],legacy-tickercustommodel,(nested type),exchangeName,,string,yes,Frankfurt Stock exchange,spec,from swagger.json TickerCustomModel
+Article.stock[],legacy-tickercustommodel,(nested type),bloombergCode,,string,yes,GR,spec,from swagger.json TickerCustomModel
+Article.stock[],legacy-tickercustommodel,(nested type),reutersCode,,string,yes,F,spec,from swagger.json TickerCustomModel
+Article.stock[],legacy-tickercustommodel,(nested type),quoteMediaCode,,string,yes,FRA,spec,from swagger.json TickerCustomModel
+Article.stock[],legacy-tickercustommodel,(nested type),ticker,,string,yes,MIH,spec,from swagger.json TickerCustomModel
+Article.stock[],legacy-tickercustommodel,(nested type),isin,,string,yes,JP3902400005,spec,from swagger.json TickerCustomModel
+Sector.industry[],legacy-industrymodel,(nested type),id,,integer/int32,no,109486,spec,from swagger.json IndustryModel
+Sector.industry[],legacy-industrymodel,(nested type),name,,string,yes,Japan,spec,from swagger.json IndustryModel
+Error,legacy-problemdetails,(nested type),type,,string,yes,https://tools.ietf.org/html/rfc7231,spec,from swagger.json ProblemDetails
+Error,legacy-problemdetails,(nested type),title,,string,yes,Not Found,spec,from swagger.json ProblemDetails
+Error,legacy-problemdetails,(nested type),status,,integer/int32,yes,404,spec,from swagger.json ProblemDetails
+Error,legacy-problemdetails,(nested type),detail,,string,yes,The required column 'Sectors' was not present,spec,from swagger.json ProblemDetails
+Error,legacy-problemdetails,(nested type),instance,,string,yes,/api/Articles/by-company/82,spec,from swagger.json ProblemDetails

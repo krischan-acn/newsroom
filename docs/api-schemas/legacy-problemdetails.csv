@@ -1,0 +1,2 @@
+﻿type,title,status,detail,instance
+https://tools.ietf.org/html/rfc7231,Not Found,404,The required column 'Sectors' was not present,/api/Articles/by-company/82
