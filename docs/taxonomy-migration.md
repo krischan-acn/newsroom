@@ -43,23 +43,56 @@ the data layer disagrees, so this is a rename, not a redesign.
 | `GET /api/articles/homepage`, `/api/Articles/by-industry` | `sectorName` | `sector` | Singular field holding a sector, named as if it held an industry. |
 | `article.companies[].sectorName` | `sectorName` | `sector` | **Please confirm the level.** The sample value we captured is `"Automotive"`, which is an *industry*, not a sector — so this field may be carrying the wrong level as well as the wrong name. |
 
-### 2.2 One endpoint we need
+### 2.2 The taxonomy table and its endpoint
 
-There is **no taxonomy endpoint on the new API**. The legacy one
-(`GET /api/v1/Sector/GetSectors`) had the right shape already — sectors with a nested
-`industry[]` array — but the legacy API is being switched off.
+**Confirmed 2026-08-27: industries are becoming a database table.** That is the fix for
+everything in §3.1 — the spelling drift exists only because the list is maintained in two
+places. Notes for building it:
 
-Because of that, the frontend currently **hardcodes all 76 industries** in
-`src/lib/sectors.ts`. That is the root cause of the spelling drift in §3.1: two copies of the
-same list, maintained separately. A single `GET /api/Taxonomy` (or `/api/Sectors`) returning
-sectors with their industries would let us delete the hardcoded list.
+The frontend currently **hardcodes all 76 industries** in `src/lib/sectors.ts`, because there
+is no taxonomy endpoint on the new API. The legacy one (`GET /api/v1/Sector/GetSectors`) had
+the right shape already — sectors with a nested `industry[]` array — but that API is being
+switched off.
 
-Suggested shape:
+**Two tables, not one.** Sector is its own entity with 9 rows, not a string column repeated
+across 76 industry rows. The repeated-string design is what allowed `Cryptocurrency` and
+`CryptoCurrency` to coexist (§3.2).
+
+`sector`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | int, PK | |
+| `key` | varchar, unique | Stable machine name, e.g. `Industrial`. Never shown to users, never renamed. |
+| `label` | varchar | Display name. `Financial`→`Finance`, `Medicine`→`Healthcare`, `Sustainability`→`Environment`. **`Industrial`→`Industrial`** (see §4 — decided). |
+| `sort_order` | int | The frontend currently relies on master-list order; make it explicit. |
+
+`industry`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | int, PK | Keep the existing ids from `lib/sectors.ts` — 33 is `Construct Engineering`, etc. They are already in the frontend and in the legacy `IndustryModel`. |
+| `sector_id` | int, FK → `sector.id` | Replaces today's repeated string. |
+| `name` | varchar, unique | Canonical English name, one spelling only. **This is where §3.1 gets fixed.** |
+| `name_ja`, `name_zh_hans`, `name_zh_hant`, `name_ko` | varchar, nullable | Already in `lib/sectors.ts`; carry them over rather than losing them. |
+| `sort_order` | int | |
+
+Two things worth adding while the table is new:
+
+- **A `unique` constraint on a normalised form of `industry.name`** — lowercased with commas
+  and full stops stripped. That makes `Construct, Engineering` and `Construct Engineering`
+  collide at insert time instead of silently becoming two industries. This is exactly the
+  `taxonomyKey()` rule in `lib/taxonomy.ts`.
+- **An `alias` table** (`industry_id`, `alias`) if old article rows keep the comma spellings.
+  Then the migration does not have to rewrite historical article tags, and the API can resolve
+  either spelling to one industry.
+
+**Endpoint.** `GET /api/Taxonomy` (or `/api/Sectors`), sectors with their industries nested:
 
 ```json
 [
   { "sector": "Industrial",
-    "label": "Industry",
+    "label": "Industrial",
     "industries": [
       { "id": 33, "industry": "Construct Engineering",
         "names": { "en": "Construct Engineering", "ja": "建設", "zhHans": "Construction",
@@ -68,10 +101,15 @@ Suggested shape:
 ]
 ```
 
+This shape maps 1:1 onto `SECTOR_LIST` in `lib/taxonomy.ts`, so adopting it is a change of
+source inside that one file — see step 6 in §5. Nothing that imports it changes.
+
 ### 2.3 Pick one spelling and hold it
 
-See §3.1. Whichever the new API settles on, say so explicitly, and keep it identical
-between the article payload and the taxonomy endpoint.
+See §3.1. Whichever spelling the table settles on, keep it identical between the article
+payload and the taxonomy endpoint. Once the table is the single source, `taxonomyKey()` in the
+frontend becomes belt-and-braces rather than load-bearing — worth keeping for old bookmarked
+URLs, but nothing will depend on it.
 
 ---
 
@@ -125,15 +163,25 @@ one line.
 
 ---
 
-## 4. One decision needed before this ships
+## 4. Decisions taken (2026-08-27)
 
-`Industrial` is currently displayed to users as **"Industry"**. Once the child level is
-officially called an industry, a *sector* labelled "Industry" is ambiguous — the Industry nav
-menu lists 76 industries, one of which sits under the sector displayed as "Industry".
+**The `Industrial` sector displays as "Industrial", not "Industry".** It previously showed as
+"Industry", which became ambiguous once the child level was named industry — the Industry nav
+menu lists 76 industries, one of which sat under a sector also labelled "Industry".
+`config/categories.ts` already titled that homepage row "Industrial", so this is now
+consistent across the app.
 
-Options: keep `Industrial` as the label, or something like `Manufacturing & Industry`. This is
-a product call, not a technical one. Currently set in `lib/taxonomy.ts` → `SECTOR_LABELS` and
-duplicated in `lib/filter-data.ts`.
+Applied: the label map lives once in `lib/taxonomy.ts` → `SECTOR_LABELS`, where `Industrial`
+has no entry and therefore falls through to its own name. `lib/filter-data.ts` imports
+`sectorLabel` instead of keeping its own copy.
+
+Backwards compatible: `?sec=Industry` still resolves, via `LEGACY_SECTOR_ALIASES` in
+`lib/taxonomy.ts`. Verified — both `?sec=Industrial` and `?sec=Industry` return 20 articles.
+The alias is inbound-only and never displayed; it can be dropped once no old links matter.
+
+**Industry links go to filtered search**, not a dedicated landing page. `/industry` was never
+a real route, so those links 404'd. They now point at `/search?sec=`, matching the sibling
+Sector menu.
 
 ---
 
@@ -143,21 +191,28 @@ Each step is independently shippable and independently revertable. Nothing befor
 changes what a user sees.
 
 1. **Done.** `lib/taxonomy.ts` added; `lib/sectors.ts` annotated. No behaviour change.
-2. **Consolidate the label maps.** Three copies of the sector-label mapping exist:
-   `SECTOR_DISPLAY_NAMES` in `lib/filter-data.ts`, and `DISPLAY_TO_TYPE` + `TYPE_TO_DISPLAY`
-   in `services/search.ts`. Replace all three with `SECTOR_LABELS` / `resolveSector()` /
-   `sectorLabel()`. **This alone fixes bug 3.2.**
-3. **Point `lib/sector-mapper.ts` at the new module.** Keep the old function names as
-   one-line wrappers so no caller changes yet:
-   `getSectorCategory = sectorOf`, `getArticleCategories = sectorsOf`.
-   **This alone fixes bug 3.1** — expect ~28 articles to start appearing in homepage sector
-   rows that were previously invisible. That is the first visible change, so ship it on its own.
-4. **Rebuild `INDUSTRY_HIERARCHY` from `SECTOR_LIST`.** Keep the `NestedItem` shape the
-   sidebar expects; it becomes a thin adapter over the new tree.
-5. **Fix the nav route** (bug 3.3) and migrate the remaining call sites — `MainNav/Sector`,
-   `MainNav/Industry`, `config/categories.ts`, `components/events/event-industries.ts`.
-6. **Replace the hardcoded list** with the API taxonomy endpoint from §2.2, once it exists.
-   `lib/sectors.ts` can then be deleted along with its deprecated exports.
+2. **Done.** Label maps consolidated. All three copies replaced by `SECTOR_LABELS` /
+   `resolveSector()` / `sectorLabel()`. **Fixed bug 3.2** — `?sec=Cryptocurrency` went from
+   0 articles to 12.
+3. **Done for search, NOT for the homepage.** `services/search.ts` now resolves sectors and
+   compares industries through `taxonomyKey()`. **Fixed bug 3.1 in search** — all eleven
+   affected industries return results (Construct Engineering 9, Energy Alternatives 12, EVs
+   Transportation 10, and so on), with no regression to the ones already working.
+
+   ⚠ **Still outstanding:** `lib/sector-mapper.ts` is untouched, so the homepage sector rows
+   still exclude those articles. Search and the homepage therefore disagree right now. The fix
+   is two one-line delegations — `getSectorCategory = sectorOf`,
+   `getArticleCategories = sectorsOf` — and would surface roughly 28 articles in homepage rows
+   they are currently missing from. Held back deliberately because it is a visible change.
+4. **Done.** Nav route fixed (bug 3.3) — `MainNav/Industry` links to `/search?sec=`.
+5. **Remaining call sites.** `lib/sector-mapper.ts` (see step 3), `lib/filter-data.ts`'s
+   `INDUSTRY_HIERARCHY` (rebuild from `SECTOR_LIST`, keeping the `NestedItem` shape the sidebar
+   expects), `MainNav/Sector`, `config/categories.ts`,
+   `components/events/event-industries.ts`.
+6. **Swap the source to the taxonomy table** from §2.2 once the endpoint exists. `INDUSTRIES`
+   and `SECTOR_LIST` in `lib/taxonomy.ts` are the only things that read the hardcoded list, so
+   this is a change inside that one file — nothing importing it changes. `lib/sectors.ts` and
+   its deprecated exports can then be deleted.
 
 ### Call sites to migrate
 

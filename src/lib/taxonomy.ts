@@ -39,16 +39,31 @@ import { SECTORS } from './sectors';
  * guard at the bottom of this file.
  */
 export const SECTOR_LABELS: Readonly<Record<string, string>> = {
-  Cryptocurrency: 'Cryptocurrency',
   Financial: 'Finance',
-  Industrial: 'Industry',
   Medicine: 'Healthcare',
   Sustainability: 'Environment',
+  // `Industrial` deliberately has no entry and shows as "Industrial".
+  //
+  // It used to display as "Industry", which became ambiguous once the child
+  // level was named industry — the Industry menu lists 76 industries, one of
+  // which sat under a sector also labelled "Industry". Decided 2026-08-27.
+  // This also matches config/categories.ts, which already titled the row
+  // "Industrial".
+  //
+  // Any sector with no entry here displays under its own name.
 };
 
 export function sectorLabel(sector: string): string {
   return SECTOR_LABELS[sector] ?? sector;
 }
+
+/**
+ * Labels this codebase used to emit in `?sec=`, still accepted on the way in so
+ * existing links and bookmarks keep resolving. Display never uses these.
+ */
+const LEGACY_SECTOR_ALIASES: Readonly<Record<string, string>> = {
+  Industry: 'Industrial',
+};
 
 /** One industry — the leaf level. Was a row of `Sector` in lib/sectors.ts. */
 export interface Industry {
@@ -148,6 +163,10 @@ const SECTOR_BY_KEY = new Map<string, Sector>();
 for (const sector of SECTOR_LIST) {
   SECTOR_BY_KEY.set(taxonomyKey(sector.sector), sector);
   SECTOR_BY_KEY.set(taxonomyKey(sector.label), sector);
+}
+for (const [alias, sector] of Object.entries(LEGACY_SECTOR_ALIASES)) {
+  const target = SECTOR_BY_KEY.get(taxonomyKey(sector));
+  if (target) SECTOR_BY_KEY.set(taxonomyKey(alias), target);
 }
 
 /**

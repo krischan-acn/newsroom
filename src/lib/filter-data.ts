@@ -1,5 +1,6 @@
 import { SECTORS } from './sectors';
 import { buildRegionHierarchy } from './countries';
+import { sectorLabel as sectorDisplayName } from './taxonomy';
 
 export interface NestedItem {
   id: string;
@@ -7,18 +8,12 @@ export interface NestedItem {
   children?: NestedItem[];
 }
 
-// Internal → display name remapping for sector types
-const SECTOR_DISPLAY_NAMES: Record<string, string> = {
-  CryptoCurrency: 'Cryptocurrency',
-  Financial: 'Finance',
-  Industrial: 'Industry',
-  Medicine: 'Healthcare',
-  Sustainability: 'Environment',
-};
-
-function sectorDisplayName(type: string): string {
-  return SECTOR_DISPLAY_NAMES[type] ?? type;
-}
+// Sector labels now come from lib/taxonomy.ts (imported above as
+// sectorDisplayName). This file used to keep its own copy of the map, one of
+// three in the codebase. That copy keyed the crypto sector as 'CryptoCurrency'
+// (capital C) where lib/sectors.ts has 'Cryptocurrency', so the entry matched
+// nothing — harmless here, but the same typo in services/search.ts made
+// ?sec=Cryptocurrency return zero results.
 
 // Build 2-level hierarchy from sectors master list
 // Parent ID = display name (matches URL ?sec= values from nav links)

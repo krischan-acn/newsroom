@@ -1,39 +1,32 @@
 import articles from '@/data/prefetched-articles.json';
-import { getArticleCategories } from '@/lib/sector-mapper';
 import { getCountryInfo } from '@/lib/countries';
-import { INDUSTRY_HIERARCHY, REGION_LEAF_COUNTRIES } from '@/lib/filter-data';
+import { REGION_LEAF_COUNTRIES } from '@/lib/filter-data';
 import { sanitizeText } from '@/lib/sanitize';
 import { resolveLanguage, type LanguageId } from '@/lib/languages';
+import {
+  isSectorValue,
+  resolveSector,
+  sectorLabel,
+  sectorsOf,
+  taxonomyKey,
+} from '@/lib/taxonomy';
 
 // Language filtering compares canonical ids on both sides rather than exact raw
 // strings, so a ?lang=zh-Hant query matches articles tagged "Traditional
 // Chinese", "zh-Hant" or "zh_TW" alike. The previous hardcoded string list
 // missed any spelling it had not been told about.
 
-// Sidebar display names → actual sector_type values used by getArticleCategories()
-const DISPLAY_TO_TYPE: Record<string, string> = {
-  Cryptocurrency: 'CryptoCurrency',
-  Finance: 'Financial',
-  Healthcare: 'Medicine',
-  Industry: 'Industrial',
-  Environment: 'Sustainability',
-};
-
-// Parent display names in the sidebar hierarchy (e.g. 'Technology', 'Communications')
-// Used to distinguish category-level selections from exact subsector selections
-const PARENT_SECTOR_IDS = new Set(INDUSTRY_HIERARCHY.map((item) => item.id));
-
-// Sector_type values → sidebar display names (for badges)
-const TYPE_TO_DISPLAY: Record<string, string> = {
-  CryptoCurrency: 'Cryptocurrency',
-  Financial: 'Finance',
-  Medicine: 'Healthcare',
-  Industrial: 'Industry',
-  Sustainability: 'Environment',
-};
+// Sector/industry resolution now comes from lib/taxonomy.ts, which replaces the
+// two hand-maintained label maps that used to live here.
+//
+// Those maps each spelled the crypto sector 'CryptoCurrency' (capital C in the
+// middle) while lib/sectors.ts has 'Cryptocurrency', so ?sec=Cryptocurrency
+// mapped to a sector that does not exist and returned nothing.
+//
+// See docs/taxonomy-migration.md, steps 2 and 3.
 
 export function getSectorDisplayName(sectorType: string): string {
-  return TYPE_TO_DISPLAY[sectorType] ?? sectorType;
+  return sectorLabel(sectorType);
 }
 
 interface PrefetchedArticle {
@@ -97,16 +90,23 @@ export function searchArticles({
       article.headline.toLowerCase().includes(qLower) ||
       (article.summary ?? '').toLowerCase().includes(qLower);
 
-    // Parent display names (e.g. ?sec=Technology from nav links) → category-level match.
-    // Exact subsector names (e.g. ?sec=Advertising from sidebar) → exact article.sectors match.
+    // A ?sec= value is either a sector ("Technology", or its label "Finance")
+    // or a single industry ("Construct Engineering"). resolveSector tells the
+    // two apart, so one parameter still serves both nav menus.
+    //
+    // Industry comparison goes through taxonomyKey rather than a string equality
+    // check: the article data spells eleven industries with a comma
+    // ("Construct, Engineering") where the taxonomy uses a space. The old exact
+    // match therefore returned nothing for all of them.
     const matchesSector =
       sectors.length === 0 ||
       sectors.some((s) => {
-        if (PARENT_SECTOR_IDS.has(s)) {
-          const sectorType = DISPLAY_TO_TYPE[s] ?? s;
-          return getArticleCategories(article.sectors).includes(sectorType);
+        if (isSectorValue(s)) {
+          const sector = resolveSector(s);
+          return sector ? sectorsOf(article.sectors).includes(sector.sector) : false;
         }
-        return (article.sectors ?? []).includes(s);
+        const wanted = taxonomyKey(s);
+        return (article.sectors ?? []).some((tag) => taxonomyKey(tag) === wanted);
       });
 
     const articleLanguageId = resolveLanguage(article.rawLanguage)?.id;

@@ -36,7 +36,10 @@ export default function IndustryMenu({ onClose }: IndustryMenuProps) {
               {section.items.map((item) => (
                 <Link
                   key={item}
-                  href={`/industry?sec=${toSectionParam(item)}`}
+                  // /industry does not exist as a route — this used to 404 on
+                  // every industry. /search?sec= is the one that resolves, and
+                  // it is already where the sibling Sector menu points.
+                  href={`/search?sec=${toSectionParam(item)}`}
                   className="block dropdown-link"
                   onClick={onClose}
                 >

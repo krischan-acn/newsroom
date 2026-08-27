@@ -45,11 +45,10 @@ export function isKnownIndustry(name: string): boolean {
 }
 
 /**
- * The search page treats a ?sec= value that is not a parent category as an
- * exact match against an article's sectors, which is what these tags are.
- *
- * Note the nav's industry links point at /industry?sec=, but no such route
- * exists yet — /search is the one that resolves today.
+ * The search page resolves a ?sec= value to either a sector or a single
+ * industry, and industries are compared punctuation-insensitively, so these tags
+ * match the article data whichever spelling it uses. Same target as both nav
+ * menus. See docs/taxonomy-migration.md.
  */
 export function industryHref(name: string): string {
   return `/search?sec=${encodeURIComponent(name)}`;
