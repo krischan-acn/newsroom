@@ -7,6 +7,7 @@ import LanguageSelector from './LanguageSelector';
 import DateTimeDisplay from './DateTimeDisplay';
 import ClientLinks from './ClientLinks';
 import DateDisplay from './DateDisplay';
+import AbHiddenTrigger from '@/components/ab/AbHiddenTrigger';
 
 export default function TopNav({
   activeLocale = 'en',
@@ -38,9 +39,11 @@ export default function TopNav({
         </div>
 
         {/* Right: Client links -- temporarily removed */}
-        <div className="nav-right ml-auto">
+        <div className="nav-right ml-auto flex items-center">
           { /* <ClientLinks links={clientLinks} /> -- temporarily removed */ }
           <DateDisplay />
+          {/* Employee A/B overlay trigger (also opens with F2). Intentionally unlabeled. */}
+          <AbHiddenTrigger />
         </div>
       </div>
     </section>

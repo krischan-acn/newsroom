@@ -9,11 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@upstash/redis": "^1.38.3",
     "dompurify": "^3.4.7",
     "next": "^16.2.6",
     "next-intl": "^4.8.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "server-only": "^0.0.1",
     "transliteration": "^2.6.1"
   },
   "devDependencies": {
