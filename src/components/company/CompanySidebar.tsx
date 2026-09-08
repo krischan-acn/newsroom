@@ -56,12 +56,49 @@ function IdentityCard({ profile }: { profile: CompanyProfile }) {
   );
 }
 
+/**
+ * One row per named contact on the company record. The label is the person (or
+ * "Contact" where the API gives a phone and email but no name), and the value
+ * stacks whatever of phone and email exists — the API populates these
+ * inconsistently, so no combination is assumed.
+ */
+function ContactRows({ profile }: { profile: CompanyProfile }) {
+  return (
+    <>
+      {profile.contacts.map((contact, i) => (
+        <RailRow
+          divided
+          block
+          key={`${contact.name ?? 'contact'}-${contact.email ?? contact.phone ?? i}`}
+          label={contact.name ?? 'Contact'}
+          value={
+            <>
+              {contact.phone && <div>{contact.phone}</div>}
+              {contact.email && (
+                <div>
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className="text-blue-700 hover:underline break-all"
+                  >
+                    {contact.email}
+                  </a>
+                </div>
+              )}
+            </>
+          }
+        />
+      ))}
+    </>
+  );
+}
+
 function ContactCard({ profile }: { profile: CompanyProfile }) {
   const hasContact =
     profile.headquarters.length > 0 ||
     profile.telephone ||
     profile.facsimile ||
     profile.website ||
+    profile.contacts.length > 0 ||
     profile.socials.length > 0;
 
   if (!hasContact) return null;
@@ -81,6 +118,7 @@ function ContactCard({ profile }: { profile: CompanyProfile }) {
         )}
         <RailRow divided label="Phone" value={profile.telephone} />
         <RailRow divided label="Fax" value={profile.facsimile} />
+        <ContactRows profile={profile} />
         <RailRow
           divided
           label="Website"
@@ -126,7 +164,15 @@ function StockCard({ profile }: { profile: CompanyProfile }) {
             divided
             key={`${ticker.exchange}-${ticker.symbol}`}
             label={ticker.exchange}
-            value={<span className="font-semibold text-gray-900">{ticker.symbol}</span>}
+            value={
+              <>
+                <span className="font-semibold text-gray-900">{ticker.symbol}</span>
+                {/* Only API-sourced listings carry an ISIN; curated ones omit it. */}
+                {ticker.isin && (
+                  <span className="ml-2 text-gray-500">ISIN {ticker.isin}</span>
+                )}
+              </>
+            }
           />
         ))}
         <RailRow divided label="OTC" value={profile.otc} />

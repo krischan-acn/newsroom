@@ -94,14 +94,25 @@ export default function MainNav() {
 
           
             {/* Desktop Search - lg and up */}
-            <div className="hidden lg:flex flex-1 max-w-xl xl:max-w-2xl mx-6 self-center">
-              <form action="/search" method="GET" className="relative w-full">
+            {/*
+              flex-1 + justify-center, with a spacer the width of the logo on the
+              other side (below), so the box sits in the true centre of the row.
+              It used to be flex-1 with a max-width and no counterweight, which
+              with justify-between and an empty actions slot let it stretch
+              rightward into the gap instead of centring.
+            */}
+            <div className="hidden lg:flex flex-1 justify-center mx-6 self-center">
+              <form action="/search" method="GET" className="relative w-full max-w-xl xl:max-w-2xl">
                 <input
                   type="search"
                   name="q"
-                  placeholder="News releases by Company, Region, Sector, Industry, Language & Event"
+                  // This box searches COMPANIES, not headlines. The old
+                  // placeholder promised region, industry, language and event
+                  // search, none of which it ever did. Sector browse still
+                  // exists, but through the mega-menu rather than this field.
+                  placeholder="Search for a company"
                   className="w-full px-4 py-2 pr-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  aria-label="Search"
+                  aria-label="Search for a company"
                 />
                 <button
                   type="submit"
@@ -114,7 +125,13 @@ export default function MainNav() {
                 </button>
               </form>
             </div>
-            {/* Desktop Actions - lg and up: intentionally empty, see NAV_ITEMS note above */}
+            {/*
+              Desktop Actions - lg and up: intentionally empty, see NAV_ITEMS
+              note above. Until something lives here it is a spacer matching the
+              logo's width, which is what actually centres the search box. Give
+              it real content and drop the w-[250px].
+            */}
+            <div className="hidden lg:block flex-shrink-0 w-[250px]" aria-hidden="true" />
           </div>
 
           {/* Desktop Mega Menu - second row on lg */}
@@ -194,7 +211,7 @@ export default function MainNav() {
                         <input
                           type="search"
                           name="q"
-                          placeholder="Search..."
+                          placeholder="Search for a company"
                           className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           autoFocus
                         />

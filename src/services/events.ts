@@ -2,6 +2,7 @@
 import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
 import { sanitizeText, sanitizeHeadline } from '@/lib/sanitize';
+import { apiInit } from '@/lib/api-timeout';
 
 const NEW_API_BASE = 'https://development.acnnewswire.com';
 const EVENT_IMAGE_BASE = 'https://www.acnnewswire.com/eventimages/';
@@ -160,7 +161,10 @@ async function fetchRawEventPage(page: number): Promise<AcnEvent[]> {
   try {
     const res = await fetch(
       `${NEW_API_BASE}/api/Events?pageNumber=${page}&pageSize=${PAGE_SIZE}`,
-      { cache: 'no-store', headers: { Accept: 'application/json' } },
+      // Timed out like the rest: this sweep is sequential over up to MAX_PAGES,
+      // so an unreachable host would otherwise stall for 20s per page before
+      // the loop gave up.
+      apiInit({ cache: 'no-store', headers: { Accept: 'application/json' } }),
     );
     if (!res.ok) return [];
     const raw = await res.json();
@@ -241,7 +245,7 @@ export async function fetchEventReleases(
   try {
     const res = await fetch(
       `${NEW_API_BASE}/api/Events/company/${id}/year/${y}`,
-      { next: { revalidate: REVALIDATE }, headers: { Accept: 'application/json' } },
+      apiInit({ next: { revalidate: REVALIDATE }, headers: { Accept: 'application/json' } }),
     );
     if (!res.ok) return [];
     const raw = await res.json();

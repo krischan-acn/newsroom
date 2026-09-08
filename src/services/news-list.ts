@@ -3,6 +3,7 @@
 
 import type { NewApiArticle } from './acn-api.types';
 import { sanitizeText, sanitizeHeadline } from '@/lib/sanitize';
+import { apiInit } from '@/lib/api-timeout';
 
 // The list feeds read /api/Articles rather than /api/articles/homepage. As of
 // 2026-09-07 the homepage endpoint returns an empty array, which rendered the
@@ -59,33 +60,50 @@ function mapArticle(a: NewApiArticle): NewsListItem {
   };
 }
 
+/**
+ * Every list feed goes through here so a timeout or a dead host degrades to an
+ * empty feed instead of throwing through the render. These fetches previously
+ * had no try/catch at all, which was survivable only because an unreachable
+ * host was rare; with a 6s deadline it is a normal, expected outcome.
+ */
+async function getRows(url: string, revalidate = 3600): Promise<NewApiArticle[]> {
+  try {
+    const res = await fetch(url, apiInit({ next: { revalidate } }));
+    if (!res.ok) return [];
+    return (await res.json()) as NewApiArticle[];
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchNewsList(page = 1, limit = 20): Promise<NewsListItem[]> {
   const size = Math.min(limit, MAX_PAGE_SIZE);
-  const res = await fetch(
-    `${ARTICLES_URL}?Page=${page}&Size=${size}`,
-    { next: { revalidate: 3600 } },
-  );
-
-  if (!res.ok) return [];
-
-  const raw: NewApiArticle[] = await res.json();
+  const raw = await getRows(`${ARTICLES_URL}?Page=${page}&Size=${size}`);
   return dedupeById(raw.map(mapArticle));
 }
 
 export async function fetchLatestNews(): Promise<NewsListItem[]> {
-  const res = await fetch(`${ARTICLES_URL}?Page=1&Size=20`, { next: { revalidate: 3600 } });
-  if (!res.ok) return [];
-  const raw: NewApiArticle[] = await res.json();
+  const raw = await getRows(`${ARTICLES_URL}?Page=1&Size=20`);
   return dedupeById(raw.map(mapArticle));
 }
 
-export async function fetchArticlesByIndustry(industry: string, pageSize = 10): Promise<NewsListItem[]> {
-  const res = await fetch(
-    `${BY_INDUSTRY_URL}?industry=${encodeURIComponent(industry)}&pageNumber=1&pageSize=${pageSize}`,
-    { next: { revalidate: 3600 } },
+/**
+ * `industry` here is a SECTOR TYPE — Technology, Business, Financial and the
+ * rest of the nine in the sector_type column of lib/sectors.ts — not one of the
+ * 76 industry names. Passing an industry name returns [] silently. Callers
+ * holding an industry should resolve it with taxonomy.sectorOf() first.
+ *
+ * The parameter is *required*: the endpoint 400s without it.
+ */
+export async function fetchArticlesByIndustry(
+  industry: string,
+  pageSize = 10,
+  page = 1,
+): Promise<NewsListItem[]> {
+  // A page past the last answers 404, which is "no rows" rather than an error.
+  const raw = await getRows(
+    `${BY_INDUSTRY_URL}?industry=${encodeURIComponent(industry)}&pageNumber=${page}&pageSize=${pageSize}`,
   );
-  if (!res.ok) return [];
-  const raw: NewApiArticle[] = await res.json();
   return dedupeById(raw.map(mapArticle));
 }
 
@@ -95,14 +113,7 @@ export async function fetchArticlesByIndustry(industry: string, pageSize = 10): 
 // Note: filter on images[0].bigImage, not hasImage/imageUrl - those come back
 // false/null even on rows whose images[] is populated.
 export async function fetchHeroSlides(n = 5): Promise<NewsListItem[]> {
-  const res = await fetch(
-    `${ARTICLES_URL}?Page=1&Size=${MAX_PAGE_SIZE}`,
-    { next: { revalidate: 3600 } },
-  );
-
-  if (!res.ok) return [];
-
-  const raw: NewApiArticle[] = await res.json();
+  const raw = await getRows(`${ARTICLES_URL}?Page=1&Size=${MAX_PAGE_SIZE}`);
   return dedupeById(
     raw.filter(a => !!a.images?.[0]?.bigImage).slice(0, n).map(mapArticle),
   );

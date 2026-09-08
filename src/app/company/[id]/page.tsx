@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { PressReleaseItem } from '@/components/press-release/PressReleaseItem';
 import { CompanySidebar } from '@/components/company/CompanySidebar';
 import { CompanyPagination } from '@/components/company/CompanyPagination';
+import { FeedUnavailable } from '@/components/company/FeedUnavailable';
 import { fetchCompanyArticlesPage } from '@/services/company-articles';
 import { fetchCompanyProfile } from '@/services/company-profile';
 import { generateCompanyMetadata, SITE_URL } from '@/lib/metadata';
@@ -36,7 +37,10 @@ export default async function CompanyPage({ params, searchParams }: Props) {
 
   // Past the last page there is nothing to show and no way back but Previous,
   // so treat a too-high ?page= as a missing page rather than an empty feed.
-  if (feed.articles.length === 0 && requestedPage > 1) notFound();
+  // An unreachable feed is excluded: we do not know that the page is past the
+  // end, and 404ing a real page because the API blinked is the bug this whole
+  // partial-render path exists to avoid.
+  if (feed.articles.length === 0 && requestedPage > 1 && !feed.unavailable) notFound();
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -68,6 +72,23 @@ export default async function CompanyPage({ params, searchParams }: Props) {
       />
 
       <div className="container mx-auto px-4 py-6 max-w-7xl min-h-125 lg:px-8 py-8">
+        {/*
+          The API was unreachable, so this page was assembled from the local
+          company index and curated file. Everything on it is real — it is just
+          not everything. Said once at the top rather than repeated per card,
+          because the cards already self-omit and a reader does not need to be
+          told six times that something is missing.
+        */}
+        {profile.isPartial && (
+          <div
+            role="status"
+            className="border border-amber-200 bg-amber-50 px-4 py-3 mb-6 text-[15px] text-amber-900"
+          >
+            Some details for this company are temporarily unavailable. What is
+            shown below is accurate; the rest will return shortly.
+          </div>
+        )}
+
         <div className="flex flex-col-reverse lg:flex-row lg:items-start gap-8 lg:gap-12">
           {/* Main column: who they are, then everything they have published. */}
           <div className="flex-1 min-w-0">
@@ -91,7 +112,9 @@ export default async function CompanyPage({ params, searchParams }: Props) {
                 {profile.description.length > 0 ? 'Press Releases' : `Press Releases from ${profile.name}`}
               </h2>
 
-              {feed.articles.length === 0 ? (
+              {feed.unavailable ? (
+                <FeedUnavailable companyName={profile.name} />
+              ) : feed.articles.length === 0 ? (
                 <p className="text-gray-500 py-8">
                   No press releases found for this company.
                 </p>

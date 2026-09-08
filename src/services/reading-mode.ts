@@ -1,5 +1,7 @@
 // services/reading-mode.ts
 
+import { apiInit } from '@/lib/api-timeout';
+
 export type ReadingMode = 'chronological' | 'company' | 'sector';
 
 // Stub — will be driven by user account preferences later
@@ -28,7 +30,7 @@ async function getNextChronological(currentId: number): Promise<number | null> {
   try {
     const res = await fetch(
       `https://development.acnnewswire.com/api/Articles?Page=1&Size=20`,
-      { next: { revalidate: 300 } }
+      apiInit({ next: { revalidate: 300 } })
     );
     if (!res.ok) return null;
     const articles: { articleId: number }[] = await res.json();

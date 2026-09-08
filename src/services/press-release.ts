@@ -2,6 +2,7 @@
 import type { PressReleaseData } from '@/components/press-release/types';
 import type { NewApiPressRelease, LegacyApiArticle } from './acn-api.types';
 import { adaptNewApiPressRelease } from './acn-adapter';
+import { apiInit } from '@/lib/api-timeout';
 
 const API_BASE = 'https://development.acnnewswire.com';
 
@@ -39,10 +40,12 @@ async function fetchLegacyArticle(id: number): Promise<LegacyApiArticle | null> 
 
 export async function fetchPressRelease(id: number): Promise<PressReleaseData> {
   const [res, legacy] = await Promise.all([
-    fetch(`${API_BASE}/api/Articles/press-release/${id}`, {
+    // The primary call gets the standard API deadline. The legacy enrichment
+    // above keeps its own much shorter leash — it is optional, this is not.
+    fetch(`${API_BASE}/api/Articles/press-release/${id}`, apiInit({
       next: { revalidate: 3600 },
       headers: { Accept: 'application/json' },
-    }),
+    })),
     fetchLegacyArticle(id),
   ]);
 

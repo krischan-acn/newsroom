@@ -1,6 +1,7 @@
 // services/company-articles.ts
 import type { NewApiArticle } from './acn-api.types';
 import { sanitizeText, sanitizeHeadline } from '@/lib/sanitize';
+import { apiInit } from '@/lib/api-timeout';
 
 const NEW_API_BASE = 'https://development.acnnewswire.com';
 const PHOTOS_BASE = 'https://photos.acnnewswire.com/';
@@ -40,6 +41,12 @@ export interface CompanyArticlePage {
   pageSize: number;
   hasNext: boolean;
   hasPrevious: boolean;
+  /**
+   * True when the feed could not be fetched, as opposed to fetching fine and
+   * finding nothing. An empty list means "this company has published nothing";
+   * this flag means "we do not know", and the page must not claim the former.
+   */
+  unavailable: boolean;
 }
 
 function mapArticle(a: NewApiArticle): CompanyArticle {
@@ -65,17 +72,21 @@ async function fetchPage(
   compId: number,
   page: number,
   pageSize: number,
-): Promise<NewApiArticle[]> {
+): Promise<{ rows: NewApiArticle[]; unavailable: boolean }> {
   try {
     const res = await fetch(
       `${NEW_API_BASE}/api/Articles/by-company/${compId}?pageNumber=${page}&pageSize=${pageSize}`,
-      { next: { revalidate: REVALIDATE }, headers: { Accept: 'application/json' } },
+      apiInit({ next: { revalidate: REVALIDATE }, headers: { Accept: 'application/json' } }),
     );
-    if (!res.ok) return [];
+    // 404 is this endpoint's "past the last page", so it is genuinely no rows.
+    // Anything else non-ok is the server failing, which is not the same thing.
+    if (res.status === 404) return { rows: [], unavailable: false };
+    if (!res.ok) return { rows: [], unavailable: true };
     const raw = await res.json();
-    return Array.isArray(raw) ? raw : [];
+    return { rows: Array.isArray(raw) ? raw : [], unavailable: false };
   } catch {
-    return [];
+    // Network failure or the request deadline.
+    return { rows: [], unavailable: true };
   }
 }
 
@@ -102,20 +113,24 @@ export async function fetchCompanyArticlesPage(
     pageSize: safeSize,
     hasNext: false,
     hasPrevious: safePage > 1,
+    unavailable: false,
   };
 
   if (!Number.isFinite(id) || id <= 0) return empty;
 
-  const [rows, nextRows] = await Promise.all([
+  const [current, next] = await Promise.all([
     fetchPage(id, safePage, safeSize),
     fetchPage(id, safePage + 1, 1),
   ]);
 
   return {
-    articles: rows.map(mapArticle),
+    articles: current.rows.map(mapArticle),
     page: safePage,
     pageSize: safeSize,
-    hasNext: nextRows.length > 0,
+    // Only the current page's outcome decides this. The next-page probe failing
+    // on its own just means we cannot offer a Next link.
+    unavailable: current.unavailable,
+    hasNext: next.rows.length > 0,
     hasPrevious: safePage > 1,
   };
 }
@@ -130,6 +145,8 @@ export async function fetchCompanyArticles(
   const id = Number(compId);
   if (!Number.isFinite(id) || id <= 0) return [];
 
-  const rows = await fetchPage(id, 1, Math.min(MAX_PAGE_SIZE, Math.max(1, limit)));
+  // This one is a sidebar extra, so a failure and an empty result are the same
+  // thing to the caller: show nothing.
+  const { rows } = await fetchPage(id, 1, Math.min(MAX_PAGE_SIZE, Math.max(1, limit)));
   return rows.slice(0, limit).map(mapArticle);
 }
