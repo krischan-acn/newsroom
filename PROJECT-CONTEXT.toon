@@ -1,0 +1,423 @@
+meta:
+  file: PROJECT-CONTEXT.toon
+  purpose: "Onboarding context map of this codebase for humans and AI agents. Read this FIRST before exploring."
+  format: TOON
+  updated: 2026-09-08
+  cadence: "twice monthly"
+  next_review: 2026-09-22
+  scope: "This repo is the frontend portal ONLY. The API is a separate .NET repo (acnnewswire-api) not present here."
+  rot_warning: "Sections api_health, blockers and current_steps go stale fastest - re-verify those every update. Structure sections (routes, components, services) change slowly."
+  refresh_how: "Probe api_health with curl against the swagger list; re-read docs/api-schemas/_gaps.csv; re-run git log since the updated date above."
+
+project:
+  name: acn-newswire-portal
+  version: 1.0.0
+  what: "Public newsroom / press-release portal for ACN Newswire"
+  root: "D:\\acn-newswire-admin\\newsroom-main"
+  branch: main
+  deploy_url: portal.acnnewswire.com
+  deploy_host: Netlify
+  deploy_config_in_repo: false
+  deploy_config_note: "No netlify.toml, _redirects or _headers exist. Build command, env vars and the Next runtime plugin are configured in the Netlify dashboard only - this repo cannot tell you what deploy does."
+  backend: "acnnewswire-api - .NET + EF Core + SQL Server, separate repo, separate team"
+
+stack[12]{layer,choice,version,note}:
+  framework,"Next.js App Router",^16.2.6,"RSC. No middleware.ts, no error.tsx, no loading.tsx, no sitemap.ts, no robots.ts anywhere"
+  ui,React,19.2.3,"react-dom 19.2.3"
+  styling,"Tailwind CSS v4",^4,"via @tailwindcss/postcss, plus 4 co-located GLOBAL .css files. No CSS Modules anywhere"
+  language,TypeScript,^5,-
+  sanitizer,dompurify,^3.4.7,"plain dompurify NOT isomorphic-dompurify. Client-only, used in Body.tsx alone"
+  ab_storage,@upstash/redis,^1.38.3,"A/B vote tallies in prod; falls back to a local JSON file when env unset"
+  slugs,transliteration,^2.6.1,"slugify() at services/acn-adapter.ts:6 for headline slugs"
+  server_guard,server-only,^0.0.1,"guards every src/ab/* module"
+  linting,"eslint + eslint-config-next","^10.0.0 / ^0.2.4","npm run lint"
+  react_compiler,babel-plugin-react-compiler,1.0.0,"devDep INSTALLED BUT DISABLED - commit 1ab5299 commented out reactCompiler:true as a hotfix"
+  i18n,next-intl,^4.8.3,"INSTALLED BUT NEVER IMPORTED - dead dependency, safe to remove"
+  testing,none,-,"No test script, no runner installed. See lib.__tests__ rows"
+
+commands[7]{cmd,runs,note}:
+  dev,"next dev","local dev server"
+  build,"next build","Netlify runs this; starts with an EMPTY .next cache"
+  start,"next start","serve built output"
+  lint,eslint,"no --fix wired"
+  prefetch-articles-new,"node scripts/prefetch-articles.mjs","MANUAL ONLY, not in package.json. Rebuilds the /search snapshot from the NEW API. SUPERSEDES scripts/prefetch-articles.js, which sweeps legacy ids and cannot run while that host is 503. Caps at the 5000 most recent articles - the corpus is 20000+ and this file is bundled"
+  probe-events-schema,"node scripts/probe-events-schema.mjs","MANUAL ONLY, not in package.json. Re-exports the EVENTS schema surface into docs/api-schemas (4 CSVs plus the Event rows of _index.csv and _field-dictionary.csv). Idempotent; leaves other entities untouched"
+  prefetch,"node scripts/prefetch-articles.js","OBSOLETE - sweeps legacy ids 107000-107303 against a host that has been 503 since 2026-08-27, and those ids no longer exist. Use prefetch-articles.mjs instead"
+
+env[8]{name,read_at,status,purpose}:
+  AB_USERS,src/ab/config.ts:20,active,"user:password pairs for employee A/B login"
+  AB_ADMINS,src/ab/config.ts:21,active,"usernames allowed at /admin"
+  AB_SECRET,src/ab/config.ts:22,active,"HMAC key signing the A/B session cookie"
+  UPSTASH_REDIS_REST_URL,src/ab/store.ts:27,optional,"unset locally, so store falls back to .ab-data/store.json"
+  UPSTASH_REDIS_REST_TOKEN,src/ab/store.ts:27,optional,"pairs with the URL above"
+  NEXT_PUBLIC_SITE_URL,"src/lib/metadata.ts:6 + src/app/api/og/article/[id]/route.tsx:4",active,"canonical and OG urls ONLY - does not affect data fetching"
+  USE_MOCK,src/services/index.ts:6,DEAD,"index.ts has zero importers, so this gate is unreachable"
+  NEXT_PUBLIC_API_BASE_URL,nowhere,TRAP,"README documents it as the backend switch but NO CODE READS IT. Setting it in Netlify does nothing. API hosts are hardcoded per service file"
+
+api_hosts[5]{role,host,note}:
+  new_api,https://development.acnnewswire.com,"Primary. HARDCODED in 6 service files, no env indirection. Note the name says development but it is what production uses"
+  legacy_api,https://www.acnnewswire.com/acnnewswireapi,"Enrichment fields + the company archive feed. Also hardcoded"
+  photos,https://photos.acnnewswire.com,"article images - whitelisted in next.config.ts"
+  company_logos,https://www.acnnewswire.com/images/company,"whitelisted in next.config.ts"
+  event_images,https://www.acnnewswire.com/eventimages,"NOT whitelisted in next.config.ts - next/image would reject these"
+
+api_health:
+  probed: 2026-09-08
+  summary: "New API host is UP (swagger 200, 13 paths). The Sectors 500 on press-release/{id} and by-company/{id} is FIXED - articles and company feeds work again. Events/{id} still 500s on the same bug class. Legacy API host is still fully DOWN (503)."
+  events_caution: "Do NOT probe /api/Events without pageSize - the default page of 10 is what led an earlier pass to record 'only 10 events, all 2007-2009'. There are 839."
+  probe_note: "Probe with REAL ids from the list endpoints (articles 106624-106708, companies 14/82/574, events 17-23/163/177/178) - a 404 from a missing record otherwise reads as breakage."
+  endpoints[13]{path,host,status,detail}:
+    /swagger/v1/swagger.json,new,200,"API is alive, 13 paths published (was 15 - CompContacts and the two Companies sub-paths reshuffled)"
+    /api/Articles,new,200,"works BUT the dev DB is a stale partial snapshot - newest publishDate is 2026-04-28"
+    /api/Articles/homepage,new,200-EMPTY,"returns [] so news-list.ts deliberately reads /api/Articles instead"
+    /api/Articles/by-industry,new,200,"FIXED-ish: was recorded 200-EMPTY, but it 400s without the REQUIRED industry param and returns real rows with it"
+    /api/Articles/search,new,200-EMPTY,"returns [] for every filter. Takes ExchangeId/SectorName/CompanyName/TickerId/Country - there is NO keyword param, so it cannot back /search"
+    /api/Articles/press-release/{id},new,200,"FIXED 2026-09-08 (was 500 Sectors). sectors now arrives as a real ARRAY, not a JSON-encoded string - closes gap ART-01"
+    /api/Articles/by-company/{id},new,200,"FIXED 2026-09-08 (was 500 Sectors). pageNumber/pageSize paginate correctly - verified pages 1/2/3 and pageSize=100"
+    /api/Companies,new,200,"works, and takes Page/Size - a company directory IS now possible, contra not_built_at_all.company_directory"
+    /api/Companies/{id},new,200,works
+    /api/Companies/{id}/details,new,200,works
+    /api/Events,new,200,"works and PAGES - pageSize IS honoured and the DEFAULT IS ONLY 10, so an unpaged call returns 10 arbitrary rows. 839 events total (816 publish=y), 2007-11-18 to 2026-12-02. Not date-ordered, so truncating the fetch hides the upcoming ones. Full sweep is ~2.65MB because each event repeats its organiser once per release (one ships the same company 167 times)"
+    /api/Events/{id},new,500,"STILL BROKEN. 'The required column Companies was not present' - same bug class the Articles endpoints just had fixed. Worked around: services/events.ts reads the list and filters"
+    /api/Events/company/{id}/year/{year},new,200,"works and IS the event-to-release relation - see EVT-03 below"
+  legacy[2]{path,status,detail}:
+    /api/v1/News/GetArticleById/{id},503,"Whole legacy host still down. Enrichment only now - supplies language, location, views, supplier, url"
+    /api/v1/Company/GetNewsByCompanyId/{id},503,"NO LONGER USED - company-articles.ts was cut over to the new API on 2026-09-08"
+
+local_vs_deployed:
+  status: "RESOLVED 2026-09-08 at the source - the backend fixed the Sectors 500, so article detail works from a cold cache. Kept because the mechanism will bite again the next time an endpoint breaks."
+  verify: "The stale fetch-cache on this machine was cleared and a full build re-run against the live API on 2026-09-08; all routes returned 200. If articles 404 again, this is still the first thing to rule out."
+  question: "Why do articles render on localhost but 404 on portal.acnnewswire.com?"
+  answer: "Stale Next.js fetch cache on the dev machine, which is gitignored and never deployed."
+  mechanism[5]{step,detail}:
+    1,"Every article fetch uses next.revalidate 3600 (src/services/press-release.ts:33) - no cache:no-store anywhere"
+    2,".next/cache/fetch-cache on this machine holds 21 cached responses, newest 2026-08-27 20:02, captured while the endpoint still worked"
+    3,"Next serves that stale entry when background revalidation fails (stale-on-error), so localhost still renders articles"
+    4,"/.next/ is gitignored at .gitignore:17, so a Netlify build starts with an empty cache and hits the live 500 directly"
+    5,"fetchPressRelease throws at src/services/press-release.ts:39-41, the page catch converts it to notFound() at src/app/article/[...segments]/page.tsx:117, and the visitor sees a 404"
+  not_the_cause[4]{ruled_out,why}:
+    "Netlify config","No netlify.toml exists and the site itself returns 200"
+    "repo connection","Deploy pipeline is fine, the build succeeds"
+    "frontend code","Same code renders correctly against cached data"
+    "NEXT_PUBLIC_API_BASE_URL","Read by no code - changing it in Netlify has zero effect"
+  what_still_works_when_deployed[3]{route,why}:
+    /search,"Reads the bundled 292-article JSON snapshot, makes zero network calls"
+    /events/<slug>,"Event detail pages are served entirely from src/data/mock-events.ts"
+    /company/<id>,"Profile cards render (Companies endpoints are healthy) but the release feed is empty because its legacy source is 503"
+
+routes:
+  note: "Zero route-segment config exports exist anywhere in src/app. All caching is set at the fetch() call site."
+  pages[12]{file,url,kind,data,renders,notes}:
+    src/app/layout.tsx,"(wraps all)",server,generateBaseMetadata,"TopNav, MainNav, children, Footer, AbOverlay in Suspense","Inter via next/font"
+    src/app/page.tsx,/,server,"fetchHeroSlides, fetchEvents, fetchPressRelease x5, fetchArticlesByIndustry","HomeHero, EventsRow, FeaturedReleases, CategoryRow xN","5 HARDCODED featured ids: 85791 107246 107300 107292 107230. Every fetch has .catch(->[]) so the page never throws, it just renders empty"
+    src/app/article/[...segments]/page.tsx,/article/*,server,"fetchPressRelease, fetchCompanyArticles, fetchReleaseVersions","PressRelease, InfiniteArticleFeed, NewsArticle JSON-LD","Canonical shape /article/<lang>/<id>/<slug>, other shapes 308-redirect in. Two separate segment parsers that must agree (extractId at :16 for metadata, inline destructure at :46 for render). Imports the PRIVATE Next internal next/dist/client/components/redirect-error at :4 - upgrade-fragile"
+    src/app/company/[id]/page.tsx,"/company/<id>?page=N",server,"fetchCompanyProfile, fetchCompanyArticlesPage","PressReleaseItem xN, CompanyPagination, CompanySidebar","PAGE_SIZE 15. generateMetadata refetches the profile, deduped only by the fetch cache not React cache()"
+    src/app/events/page.tsx,/events,server,"fetchEvents, listMockEvents","EventListCard, Link rows","MIXES live API events with mock featured events on one page. Live rows now link INTERNALLY to /events/<id> instead of straight out to the organiser site"
+    src/app/events/[eventId]/page.tsx,"/events/<slug> and /events/<id>",server,"getMockEvent, else fetchEvent + fetchEventReleases","curated: Hero, StatBand, EventReleaseItem, Rail*. live: ./LiveEvent.tsx","TWO-STEP RESOLVE as of 2026-09-08: a mock slug renders the curated page unchanged; anything else is looked up against the live API and rendered by LiveEvent.tsx. Only ids the API does not know 404 now. generateStaticParams still prerenders the 4 curated slugs"
+    src/app/events/[eventId]/press-releases/page.tsx,/events/<id>/press-releases,server,"fetchEvents, fetchPressRelease xN",PressReleaseItem,"ORPHAN - nothing links here because events.ts:53 pins pressReleaseUrl to null. Only event 1119 is mapped"
+    src/app/news/page.tsx,"/news?page&limit",server,fetchNewsList,"PressReleaseItem + prev/next","hasNext is a heuristic (articles.length === limit); the API returns no total count"
+    src/app/search/page.tsx,"/search?q&page&limit&sec&lang&reg",server,searchArticles,"SearchSidebar, SearchResults","NO NETWORK - filters the bundled JSON snapshot in-process. ?country= is emitted by the nav but never parsed here, so country links return unfiltered results"
+    src/app/search/layout.tsx,/search,server,none,children,"Its metadata export is DEAD - the page's generateMetadata wins"
+    src/app/not-found.tsx,(404),server,none,"static markup","Target of every notFound() call"
+    src/app/admin/page.tsx,/admin,server,getSession,AdminPanel,"notFound() for non-admins (404 not 403). noindex. Login only via the F2 overlay, there is no login form here"
+  api[10]{file,method_url,wraps,notes}:
+    src/app/api/press-release/[id]/route.ts,GET /api/press-release/<id>,fetchPressRelease,"Client-side proxy. catch -> 404. Consumers: PressReleaseItem, InfiniteArticleFeed"
+    src/app/api/company-articles/[compID]/route.ts,GET /api/company-articles/<id>,fetchCompanyArticles,"catch -> [] with status 200, so failure is indistinguishable from 'no articles'"
+    src/app/api/og/article/[id]/route.tsx,GET /api/og/article/<id>,fetchPressRelease,"ImageResponse 1200x630. Node runtime, no edge export. Duplicates the SITE_URL const instead of importing lib/metadata"
+    src/app/api/ab/me/route.ts,GET /api/ab/me,getSession,"200 with { session: null } when anonymous. Was 401 until 2026-09-09, which put a console error on every page load for every visitor"
+    src/app/api/ab/login/route.ts,POST /api/ab/login,verifyCredentials,"sets the signed session cookie"
+    src/app/api/ab/logout/route.ts,POST /api/ab/logout,clearSessionCookie,"always ok"
+    src/app/api/ab/experiments/route.ts,GET /api/ab/experiments?path=,findExperimentForPath,"401 without session. Always returns null today because EXPERIMENTS is empty"
+    src/app/api/ab/vote/route.ts,"GET,POST /api/ab/vote","store.getVote, store.castVote","Deliberately never returns tallies to voters. 403 when the experiment is inactive. One editable vote per user per experiment"
+    src/app/api/ab/admin/route.ts,GET /api/ab/admin,"EXPERIMENTS + store.getTally","403 for non-admins"
+    src/app/api/ab/admin/toggle/route.ts,POST /api/ab/admin/toggle,store.setActive,"403 for non-admins"
+
+services[12]{file,exports,upstream,on_error}:
+  press-release.ts,fetchPressRelease,"new press-release/{id} AND legacy GetArticleById in parallel, merged","THROWS on non-ok primary. The legacy leg is enrichment only and is bounded by a 2s AbortSignal.timeout - Next does not cache failed responses, so without it every render re-waits on the 503 host"
+  acn-adapter.ts,"adaptNewApiPressRelease, headlineToSlug, languageToSlug","none - pure transform","never throws; parseSectors swallows JSON.parse failures to []"
+  news-list.ts,"fetchNewsList, fetchLatestNews, fetchArticlesByIndustry, fetchHeroSlides","new /api/articles/homepage and /api/Articles/by-industry","!ok -> [] but NO try/catch, so a network-level throw propagates"
+  company-articles.ts,"fetchCompanyArticlesPage, fetchCompanyArticles","new /api/Articles/by-company/{id} ONLY - legacy path deleted 2026-09-08","never throws -> []. A page past the last answers 404, treated as no rows. hasNext probes page+1 with pageSize 1"
+  company-profile.ts,fetchCompanyProfile,"new Companies/{id}, Companies/{id}/details, Articles/search","never throws -> null"
+  events.ts,"fetchEvents, fetchEvent, fetchEventReleases, eventYear, EVENT_TZ_LABEL","new /api/Events (list) plus /api/Events/company/{id}/year/{year}","never throws -> [] / null. NOTE: the only service that does NOT cache at the fetch call site - the 2.4MB list response exceeds Next's 2MB cache ceiling, so unstable_cache wraps the MAPPED result (~3.5KB after deduping repeated companies) and React cache() dedupes within a render"
+  reading-mode.ts,"getReadingMode, getNextArticleId",new /api/Articles?Size=20,"-> null. revalidate 300 is set but it is CALLED FROM A CLIENT COMPONENT so the directive is ignored and the browser hits the external API directly"
+  release-versions.ts,"fetchReleaseVersions, RELEASE_VERSIONS_SUPPORTED",none,"DECLARED STUB - always returns exactly [current]. Flag is false"
+  search.ts,"searchArticles, getSectorDisplayName","none - imports src/data/prefetched-articles.json","synchronous, never throws"
+  index.ts,getPressRelease,delegates,"DEAD FILE - zero importers"
+  mock-press-release.ts,mockPressRelease,none,"DEAD - only index.ts imports it"
+  acn-api.types.ts,"NewApiArticle, LegacyApiArticle, NewApiPressRelease",none,"wire types only, never leak past the adapters"
+
+adapter:
+  why: "The new API omits language, location, views, supplier, origin url, the full sector list and company socials, so fetchPressRelease calls BOTH hosts and merges."
+  entry: src/services/acn-adapter.ts:43
+  legacy_only_fields[5]: supplier,location,url,views,"language (without legacy every article canonicalises to /article/english/...)"
+  quirks[4]{quirk,detail}:
+    sectors_double_encoded,"New API sends sectors as a JSON-encoded STRING, parsed by parseSectors at acn-adapter.ts:23"
+    field_name_chaos,"Two fields have four spellings across three endpoints: companyId/companyID/comp_ID and logoFilename/logoFileName/logofilename. news-list.ts:35,48 reads both casings defensively"
+    bodyHtml_unsanitized,"acn-adapter.ts:64 is a bare ?? chain unlike every neighbouring field - see security section"
+    stock_hardcoded,"acn-adapter.ts:80 pins stock to null"
+  canonical_type_location: "src/components/press-release/types.ts:24 declares PressReleaseData - the app's central article type lives in a COMPONENT folder and services import from it (inverted dependency)"
+
+security:
+  sanitization_split: "Regex-only server-side (lib/sanitize.ts, no DOM, serverless-safe); DOMPurify in the browser. The article BODY is sanitised TWICE against one shared allowlist: sanitizeArticleHtml during SSR, then DOMPurify after Body.tsx mounts. 'use client' does not keep a component off the server - calling DOMPurify there threw 'sanitize is not a function' and 500'd every article page once the API stopped 404ing them."
+  only_dangerous_html: src/components/press-release/Body.tsx:29
+  findings[3]{issue,where,detail}:
+    bodyHtml_raw_in_rsc_payload,src/services/acn-adapter.ts:64,"bodyHtml still passes through the adapter unsanitized and is still returned raw by /api/press-release/{id}. As of 2026-09-08 the SSR payload IS filtered, because Body.tsx runs sanitizeArticleHtml server-side - but the adapter itself is unchanged, so any consumer that does not render through Body is still unprotected"
+    credentials_in_public_api,"new API /api/Companies response","The response schema includes username and password fields on an unauthenticated endpoint. Should be stripped from the backend DTO - raise with the API team"
+    readme_stale_on_sanitizer,README.md:29,"Still claims isomorphic-dompurify; commits bad2101/4433e24 replaced it with plain dompurify"
+
+lib[15]{file,role,status}:
+  taxonomy.ts,"Canonical SECTOR>INDUSTRY vocabulary derived from sectors.ts, punctuation-insensitive matching",active-PREFERRED
+  sectors.ts,"77-row master sector list: sector_name (industry), sector_type (sector), plus ja/zh-Hans/zh-Hant/ko names",active-SOURCE-OF-TRUTH
+  sector-mapper.ts,"Legacy sector string -> sector_type mapper",active-but-SUPERSEDED-by-taxonomy.ts
+  languages.ts,"The 5 languages plus alias resolution across API, URL and subdomain spellings",active
+  countries.ts,"148 countries with continent and sub-region, plus a region tree builder",active
+  filter-data.ts,"Derives the industry and region hierarchies the search sidebar renders",active
+  regions.ts,"Hardcoded continent>subregion>country tree for the nav mega-menus",active-but-CONFLICTS-with-countries.ts
+  metadata.ts,"Builds Next Metadata for site, article, listing and company",active
+  sanitize.ts,"Regex entity-decode and tag-strip, no DOM required, PLUS sanitizeArticleHtml + the shared ARTICLE_ALLOWED_TAGS/ATTR allowlist used by both sanitiser passes",active
+  utils.ts,"decodeHtmlEntities plus formatDateTime using a language-derived timezone",active
+  azure.ts,"Fake DB client whose methods return empty",DEAD
+  region-mapping.ts,"Flat country->region map",DEAD-superseded-by-countries.ts
+  search-mock-data.ts,"Hardcoded results for the old mocked search page",DEAD
+  __tests__/languages.test.ts,"Hand-rolled assertion suite with its own failed counter and exit code","CANNOT RUN - its header says to use npx tsx, but tsx is not installed"
+  __tests__/sector-mapper.test.ts,"Three console.log calls, zero assertions","THROWAWAY - its own comment says delete after"
+
+static_data[8]{file,size,consumed_by,status}:
+  src/data/prefetched-articles.json,"5000 articles / 2.93 MB",services/search.ts:1,"LOAD-BEARING - the SOLE backing store for /search. REBUILT 2026-09-09 from the new API by scripts/prefetch-articles.mjs. The previous 292-article snapshot held ids 107000-107303, NONE of which exist on the current API (it serves 100269-106708), so every search result linked to a 404. Now the 5000 most recent articles, all verified to resolve. Caveats: location is empty (legacy-only field, so the region facet matches nothing) and only ~32% carry sectors"
+  src/data/mock-events.ts,"4 events / 19.4 KB","app/events/page.tsx, app/events/[eventId]/page.tsx","LOAD-BEARING - event detail pages are 100% mock, not from fetchEvents()"
+  src/data/company-profiles.ts,"2 companies: 82 MHI, 574 HKTDC",services/company-profile.ts:14,"live - fills API nulls; API wins except industry where curated wins"
+  src/data/event-article-mappings.json,"1 mapping / 31 bytes",app/events/[eventId]/press-releases,"live but near-empty hand-maintained workaround. Every other event id yields []"
+  src/config/categories.ts,"9 categories",app/page.tsx:5,"live - drives the homepage category rows"
+  src/lib/search-mock-data.ts,6.8 KB,none,DEAD
+  data/fields/*.csv,"10 files / 2678 lines",none,"REFERENCE ONLY - CMS field dumps. manifest.csv references an editor.csv that does not exist"
+  data/swagger.json,"15 legacy paths / 43.7 KB","none in src","REFERENCE ONLY - legacy spec. Only 2 of its 15 paths are actually called"
+
+components:
+  data_rule: "No component fetches server-side. Pages and route handlers do all server fetching and pass props down. Only 3 components fetch client-side."
+  client_fetchers[3]{file,calls}:
+    ab/AbOverlay.tsx,"/api/ab/me, /api/ab/experiments, /api/ab/vote GET+POST, /api/ab/login, /api/ab/logout"
+    press-release/PressReleaseItem.tsx,"/api/press-release/{id} to backfill a missing logo - N+1 risk, one request per logoless row in a feed"
+    press-release/InfiniteArticleFeed.tsx,"/api/press-release/{nextId}, /api/company-articles/{compId}, plus getNextArticleId which hits the EXTERNAL API from the browser"
+  ab[3]{file,type,purpose,notes}:
+    ab/AbOverlay.tsx,client,"Employee A/B toolbar: login modal, a/b/side/slider mode switch, iframe compare panes, preference vote","480 lines. F2 hotkey. Injects /ab-variants/<id>.css. postMessage scroll sync between iframes"
+    ab/AbHiddenTrigger.tsx,client,"2px unlabeled dot in TopNav that opens the overlay","dispatches window event ab:trigger"
+    ab/AbOverlay.css,css,"pulse keyframes plus bar and modal styles","imported by BOTH ab components"
+  company[2]{file,type,purpose,notes}:
+    company/CompanyPagination.tsx,server,"Prev/Next-only pager","no total count is available from the feed; returns null when neither direction exists"
+    company/CompanySidebar.tsx,server,"Company rail: Identity, Contact and Stock cards, each self-omitting","built on Rail primitives; carries the page h1; lg:sticky"
+  events[7]{file,type,purpose,notes}:
+    app/events/[eventId]/LiveEvent.tsx,server,"The API-backed event detail page - hero, event image, release feed, countdown and a self-omitting details rail","Lives beside the route, not in components/, because it IS the second half of that route. Uses PressReleaseItem (real ids, so rows link) rather than EventReleaseItem (mock ids, deliberately unlinked). Renders no venue/admission/hours card - the API has no such fields"
+    events/EventCountdown.tsx,client,"Live countdown with upcoming/live/ended phases","setInterval 1s; null-until-mount to dodge stale-build hydration; trusts the server phase only when ended"
+    events/EventListCard.tsx,server,"Listing row linking to /events/<slug>","mock events only; gradient stands in for a photo"
+    events/EventReleaseItem.tsx,server,"Non-linked press-release row for event pages","deliberately non-linked because mock ids would 404. Dimensional twin of PressReleaseItem"
+    events/EventStatusPill.tsx,client,"Opens-in-N-days / Happening-now / Ended pill","setInterval 60s; height-reserving placeholder pre-mount"
+    events/event-date.ts,module,"Date helpers that render in the event's own ISO offset, not the visitor's timezone",-
+    events/event-industries.ts,module,"Derives event industry tags from release sectors via lib/sectors and lib/filter-data","module-level dev-only console.warn - a side effect on import"
+  home[5]{file,type,purpose,notes}:
+    home/HomeHero.tsx,client,"8-second autoplay carousel with progress bars and play/pause","clone-slide loop via onTransitionEnd; pauses on visibilitychange; inline style keyframes"
+    home/CategoryRow.tsx,client,"Horizontal shelf of category articles","per-image aspect sizing on onLoad; raw img; usePathname as a remount key"
+    home/EventsRow.tsx,client,"Upcoming-events shelf linking to external organiser sites","client-side filter startDate >= today, then sort"
+    home/FeaturedReleases.tsx,server,"3-column featured grid, 0.6fr/0.2fr/0.2fr","has its OWN local ArticleMeta, unrelated to press-release/ArticleMeta"
+    home/ShelfScrollBar.tsx,client,"Draggable custom horizontal scrollbar bound to a parent scroll ref","ResizeObserver plus 3-stage measure; handles bfcache pageshow and popstate; returns null when no overflow"
+  nav[18]{file,type,purpose,notes}:
+    nav/index.tsx,module,"Barrel exporting TopNav and MainNav","3 lines"
+    nav/MainNav/index.tsx,client,"Sticky header: logo, GET /search form, mega-menu row, mobile overlay","NO action links since 2026-09-09 - About/Contact/Login/Register all pointed at non-existent routes and were removed. Both render sites are marked intentionally empty. 4 useState, scroll listener, outside-click, 75/150ms transition choreography. Ignores its own MainNavProps"
+    nav/MainNav/MegaMenuNav.tsx,client,"Mega-menu tab bar and height-animated dropdown shell","useLayoutEffect plus ResizeObserver measurement. Declares its own local props type"
+    nav/MainNav/Company/index.tsx,client,"Company mega-menu: region columns plus A-Z index","FULLY STUBBED - placeholder One..Five, every href is #"
+    nav/MainNav/Country/index.tsx,client,"Country menu grouped continent > subregion > country","BROKEN LINKS - points at /search?country= which the search page never parses, so results are unfiltered"
+    nav/MainNav/Industry/index.tsx,client,"Industry menu grouped by sector_type, links to /search?sec=",-
+    nav/MainNav/Sector/index.tsx,client,"Top-level sector menu, links to /search?sec=","duplicates the toSectionParam helper from Industry"
+    nav/MainNav/Region/index.tsx,client,"Sub-region menu, links to /search?reg=",-
+    nav/MainNav/Language/index.tsx,client,"Language menu showing label plus endonym","sets hrefLang and lang"
+    nav/MainNav/types.ts,module,"MegaMenuItem and DEFAULT_MEGA_MENU_ITEMS, 9 tabs","MainNavProps and MegaMenuNavProps are never imported. Exchange and Stock Codes tabs have href # and no dropdown"
+    nav/MainNav/MainNav.css,css,"nav-link and dropdown-link rules","GLOBAL stylesheet not a module. The .nav-button* rules are unused by any TSX"
+    nav/TopNav/index.tsx,server,"Utility strip: language selector, centered clock, date, hidden A/B dot","a SERVER component composing 4 client children"
+    nav/TopNav/DateTimeDisplay.tsx,client,"4-zone clock: IST, CST, SGT+HKT, KST+JST","renders placeholder dots pre-mount; minute-aligned setTimeout then setInterval"
+    nav/TopNav/DateDisplay.tsx,client,"Today's date, re-armed at midnight","returns null pre-mount"
+    nav/TopNav/LanguageSelector.tsx,client,"Globe dropdown to 5 external ACN domains","hover-intent timeout; outside-click. Re-implements the dropdown in Tailwind, ignoring TopNav.css rules"
+    nav/TopNav/ClientLinks.tsx,client,"Clients/Journalists/Publishers links, collapsing under 1080px","ORPHAN - imported at TopNav/index.tsx:8 but its JSX is commented out at :43"
+    nav/TopNav/types.ts,module,"Language and ClientLink types plus defaults","DEFAULT_CLIENT_LINKS feeds only the dead clientLinks prop"
+    nav/TopNav/TopNav.css,css,"top-nav and global-dropdown rules","GLOBAL. Several rules unused since LanguageSelector went Tailwind"
+  press_release[13]{file,type,purpose,notes}:
+    press-release/PressRelease.tsx,server,"Full article shell: article column plus rail","also rendered INSIDE the client InfiniteArticleFeed, so it and its server children get bundled to the client on that path"
+    press-release/Hero.tsx,client,"Headline, subhead, source/date/language block","client only for a useState in LogoMark"
+    press-release/Body.tsx,client,"Renders the sanitized article HTML","THE ONLY dangerouslySetInnerHTML in the app. Client because dompurify needs a DOM. Explicit 33-tag / 12-attr allowlist, no style, no id, no handlers"
+    press-release/Company.tsx,client,"About-the-company block with logo and website","useState logo error fallback"
+    press-release/ArticleSidebar.tsx,server,"Article rail: released-by, summary, versions, details, topics, follow","dev-only amber Stub notice gated on RELEASE_VERSIONS_SUPPORTED and NODE_ENV"
+    press-release/ArticleFooterLink.tsx,server,"acnnewswire.com footer link plus view count",-
+    press-release/ShareBar.tsx,client,"LinkedIn / X / Email / Copy-link row","reads window.location.href in useEffect; 2s Copied state"
+    press-release/MoreFromCompany.tsx,server,"Up to 3 sibling releases, excluding the current id","returns null when empty"
+    press-release/PressReleaseItem.tsx,client,"The site's universal release row - logo, headline, meta, thumb","MOST REUSED list item: MoreFromCompany, SearchResults, /news, /company/<id>, event press-releases. Fetches /api/press-release/{id} to backfill a missing logo"
+    press-release/InfiniteArticleFeed.tsx,client,"Infinite article reader that appends the next release and rewrites the URL on scroll","two IntersectionObservers, history.replaceState, loadedIds Set dedupe, loadingRef reentrancy guard. Observes #article-first-wrapper set by the route"
+    press-release/ArticleMeta.tsx,server,"dl of topic, region, country, source, language, sectors","ORPHAN - removed from PressRelease (see its comment at :49-51) and rendered nowhere. Still carries hardcoded East Asia / Japan defaults"
+    press-release/types.ts,module,"CompanyData, Location, PressReleaseData","The canonical article type lives HERE, not in services - services import upward from a component folder"
+    press-release/index.tsx,module,"Barrel","OMITS ArticleSidebar and PressReleaseItem despite both being widely used via deep imports"
+  search[4]{file,type,purpose,notes}:
+    search/SearchSidebar.tsx,client,"Filter rail: sector/industry tree, language checkboxes, region tree","URL-driven, no local source of truth. Note the asymmetry: sector toggles expand to leaves and never store parents, region toggles DO store parents"
+    search/SearchResults.tsx,server,"Result count line, list, pager","maps sectors through getArticleCategories and getSectorDisplayName"
+    search/NestedCheckbox.tsx,client,"Recursive tri-state hierarchy checkbox","sets .indeterminate imperatively via ref; auto-opens when a child is selected"
+    search/Pagination.tsx,client,"Prev / Page X of Y / Next","hardcodes the /search? target"
+  ui[6]{file,type,purpose,notes}:
+    ui/Rail.tsx,server,"Shared rail primitives: RailSection, RailRow, RailExternalLink plus RAIL_WIDTH/RAIL_PILL/RAIL_LINK consts","RailRow self-omits on null/undefined/empty - this is the mechanism behind every 'card omits itself' behaviour. Keeps the company and article rails dimensionally identical"
+    ui/LanguageTag.tsx,client,"Language badge with hover tooltip and right-click details menu","MOST-REUSED LEAF, 7 call sites. Portaled; viewport-flip positioning; span role=button because it nests inside card-wide Links"
+    ui/SocialLinks.tsx,server,"Rail social row, falls back to a text link when no glyph matches","10-key ICONS map, twitter maps to X"
+    ui/Footer.tsx,server,"Global footer: logo, 5 link columns, 9 social icons, copyright","EVERY link is href=#. Zero Tailwind - pure Footer.css. Looks like a Webflow export"
+    ui/Footer.css,css,"footer-* rules, 155 lines",-
+    ui/SocialIcon.jsx,server,"Maps a platform string to an icon asset","the ONLY .jsx file in the tree, untyped. Declares a size prop that is never used, imports next/image without using it"
+
+styling:
+  approach: "Tailwind v4 utilities as the default, with 4 co-located GLOBAL stylesheets. No CSS Modules anywhere, so those class names leak app-wide."
+  inconsistencies[6]{issue,detail}:
+    accent_three_ways,"var(--accent-color) in ab and MainNav.css, literal #2088c9 in events/search/press-release/home, and #2563eb or blue-600 in .nav-link.active and the MainNav search focus ring"
+    footer_no_tailwind,"ui/Footer.tsx uses pure .footer-* global CSS with zero Tailwind - the single largest inconsistency in the tree"
+    two_button_systems,".button and .button.alt live in globals.css as the de-facto shared button, but MainNav styles its Login/Register pills with raw Tailwind instead"
+    dead_class_names,".megamenu-title and .dropdown-menu-section are used in JSX but defined in no stylesheet. Conversely .nav-button*, .global-dropdown-menu*, .nav-middle and .separator are defined but unused"
+    image_strategy_split,"raw img with an eslint-disable in CategoryRow, EventsRow, FeaturedReleases, PressReleaseItem, CompanySidebar, ArticleSidebar, SocialLinks, SocialIcon and Footer, versus next/image in HomeHero, press-release/Hero, press-release/Company and the MainNav logo"
+    globals_css_typo,"src/app/globals.css:7 defines --text-csolor while body reads var(--text-color), so the variable never resolves. Dark-mode block is commented out at :19-26"
+
+next_config[3]{setting,value,note}:
+  headers,"/_next/image gets Content-Disposition: inline",-
+  redirects,"/companies/:id -> /company/:id (permanent); /companies and /company -> / (temporary)","FIXED 2026-09-09. /companies used to 308 into /company, which has no page.tsx and so 404'd. Both bare paths now land on the homepage until a company directory exists"
+  images.remotePatterns,"www.acnnewswire.com/images/company/** and photos.acnnewswire.com/**","www.acnnewswire.com/eventimages is used by events.ts but NOT whitelisted"
+
+ab_testing:
+  what: "Employee-only A/B compare-and-vote overlay, opened with F2 or a hidden dot in the TopNav."
+  status: "Framework COMPLETE and wired into the site shell. ZERO experiments registered, so it is inert everywhere."
+  built_in_commit: ad42ca1
+  working[6]{piece,where}:
+    auth,"src/ab/config.ts, token.ts (HMAC-SHA256 + timingSafeEqual), session.ts"
+    storage,"src/ab/store.ts picks Upstash Redis when env is set, else src/ab/store.local.ts writing .ab-data/store.json with a write queue"
+    api,"7 routes under src/app/api/ab/ - all session-gated and validated"
+    vote_ui,"src/components/ab/AbOverlay.tsx - a/b/side-by-side/slider modes plus Prefer A/B buttons with optimistic update"
+    results_ui,"src/app/admin/AdminPanel.tsx - live A vs B bars, percentages, per-experiment on/off toggle"
+    mounting,"src/app/layout.tsx renders AbOverlay in Suspense; TopNav renders the hidden trigger"
+  missing[4]{gap,where}:
+    no_experiments,"src/ab/experiments.ts:27-35 - EXPERIMENTS is an empty array with only a commented example, so findExperimentForPath always returns null and every page shows 'No experiment on this page'"
+    no_variant_css,"public/ab-variants/ holds only README.md - no <id>.css exists"
+    no_targets,"No page markup anywhere carries a data-ab-target attribute, so a variant stylesheet would have nothing to hook"
+    no_votes_yet,".ab-data/ does not exist and Upstash is unconfigured - nobody has voted, even locally"
+  to_activate[3]{step,detail}:
+    1,"Add an entry to EXPERIMENTS in src/ab/experiments.ts"
+    2,"Author public/ab-variants/<id>.css"
+    3,"Add data-ab-target to the markup the variant should restyle"
+
+orphans[10]{item,where,detail}:
+  ArticleMeta,src/components/press-release/ArticleMeta.tsx,"rendered nowhere; still has hardcoded region/country defaults"
+  ClientLinks,src/components/nav/TopNav/ClientLinks.tsx,"JSX commented out at TopNav/index.tsx:43"
+  services/index.ts,src/services/index.ts,"zero importers, so its USE_MOCK gate is unreachable"
+  mock-press-release.ts,src/services/mock-press-release.ts,"only index.ts imports it"
+  lib/azure.ts,src/lib/azure.ts,"fake DB client, no consumers"
+  lib/region-mapping.ts,src/lib/region-mapping.ts,"superseded by countries.ts"
+  lib/search-mock-data.ts,src/lib/search-mock-data.ts,"superseded by the prefetched snapshot"
+  next-intl,package.json:15,"installed, never imported"
+  event_press_releases_route,src/app/events/[eventId]/press-releases/page.tsx,"no inbound link because events.ts:53 pins pressReleaseUrl null"
+  dead_nav_links,"src/components/nav/TopNav/types.ts:30-32 and ui/Footer.tsx","/clients, /journalists, /publishers have no routes; every footer link is href=#. NOTE: MainNav's /about /contact /login /register were the same bug and were REMOVED 2026-09-09. No public login exists - the only sign-in is the hidden employee A/B panel (F2 or the TopNav dot), so a Login link would advertise a tool meant to be invisible"
+
+conventions[8]{rule,detail}:
+  fetch_in_pages_only,"Pages and route handlers fetch; components receive props. Only AbOverlay, PressReleaseItem and InfiniteArticleFeed fetch client-side"
+  caching_at_call_site,"revalidate is set per fetch() call, never as a route segment export. 3600 everywhere except reading-mode.ts at 300"
+  api_routes_are_proxies,"/api/press-release and /api/company-articles exist purely so client components can reach the same services the pages use"
+  rails_via_primitives,"Any new sidebar card should use ui/Rail.tsx primitives so company and article rails stay dimensionally identical"
+  self_omitting_cards,"RailRow returns nothing for null/undefined/empty, which is how cards disappear rather than render blank labels"
+  taxonomy_source,"lib/sectors.ts is the master data; prefer lib/taxonomy.ts helpers over the older lib/sector-mapper.ts"
+  sanitize_by_runtime,"lib/sanitize.ts for anything server-side (regex, no DOM); DOMPurify only inside Body.tsx in the browser"
+  languages_single_source,"lib/languages.ts resolves every API/URL/subdomain spelling - do not hand-roll language strings"
+
+docs[10]{file,what,status}:
+  docs/api-integration-2026-09-08.md,"Change report for the 2026-09-08 API cutover: what the backend fixed, what was rewired for press releases/events/companies, the two incidental fixes (SSR sanitiser 500, 2.4MB events cache), full verification log and the outstanding backend asks","CURRENT - supersedes the status of api-defect-report-2026-09-07.md, 2 of whose 3 reported 500s are now fixed"
+  README.md,"Setup instructions and architecture claims","STALE - roughly 12 claims are false. Do NOT trust it for setup. Claims route groups, Zod, isomorphic-dompurify, @tailwindcss/typography, wired next-intl, a .env.example, a working USE_MOCK path, NEXT_PUBLIC_API_BASE_URL, a src/lib/services layout and subdomain rewrites - none of which exist"
+  docs/api-defect-report-2026-09-07.md,"Backend hand-off raised for the three FromSql 500s","PARTLY OBSOLETE - the two Sectors failures (press-release/{id}, by-company/{id}) were fixed 2026-09-08. Only the Companies failure on /api/Events/{id} is still open. Kept as the record of what was raised"
+  docs/api-schemas/README.md,"How the schema capture was produced, captured 2026-08-27","Accurate. Flags SEC-01 and INF-01 as the two headline warnings. Notes the capture scripts (probe.py, gen.py, gaps.py) were NOT committed, so the docs cannot be regenerated from this repo"
+  docs/api-schemas/_gaps.csv,"28 catalogued API gaps with severity, workaround and evidence","THE most useful planning file in the repo. 2 critical, 8 high, 14 medium, 3 low. Workaround is None for EVT-07, TAX-01, CO-04 and INF-01"
+  docs/api-schemas/_index.csv,"33-row endpoint inventory with observed status and consuming service","Accurate. All 12 legacy rows recorded 503 at capture time; only 2 legacy endpoints are actually consumed"
+  docs/api-schemas/_field-dictionary.csv,"280 fields across all entities","PARTLY REFRESHED - Event and EventRelease rows re-exported 2026-09-08; every other entity still reflects the 2026-08-27 capture"
+  docs/api-schemas/_taxonomy-rename.csv,"22-row old-to-new naming contract for the sector/industry rename","Mostly current. The Industrial naming row still says TBD but taxonomy-migration.md section 4 records it as decided"
+  docs/taxonomy-migration.md,"The sector-greater-than-industry realignment plan and hand-off","PARTIALLY DONE. Steps 1, 2 and 4 done; step 3 outstanding BY CHOICE; step 5 remaining; step 6 pending backend. Its line 9 claim that nothing in the running app changed is now out of date - commit e875b51 did land behaviour changes"
+  log.md,"795-line raw dev-chat transcript of the A/B design session","DELETE AFTER EXTRACTING. Contains plaintext employee credentials (see blockers). Its design decisions are already captured in the ab_testing section above, so nothing of value is lost"
+
+gaps:
+  source: docs/api-schemas/_gaps.csv
+  captured: 2026-08-27
+  tally: "2 critical, 8 high, 14 medium, 3 low - as captured. NOT re-counted."
+  stale_warning: "The CSV itself has NOT been edited. Re-probing on 2026-09-08 found ART-01, ART-07 and EVT-03 fixed on the live API; those three rows are annotated FIXED in critical_and_high below but still count toward the tally above. Re-run the capture before trusting the numbers."
+  no_workaround_exists[4]: INF-01,TAX-01,CO-04,EVT-07
+  critical_and_high[10]{id,entity,issue,blocks,workaround}:
+    SEC-01,Company,"GET /api/Companies/{id} returns username and password as plaintext strings","not a UI blocker - a credential disclosure that reaches the browser","frontend reads the endpoint and ignores both fields, but they stay in the payload"
+    INF-01,All,"Entire legacy API returns 503 on every /acnnewswireapi/api/v1/* path","the company press-release archive (its only working source) and the article-detail fallback",NONE
+    ART-07,Article,"FIXED 2026-09-08 - GET /api/Articles/by-company/{id} was 500 on a missing Sectors column","nothing now. It is the company archive's sole source and it paginates","none needed; company-articles.ts reads it directly"
+    ART-01,Article,"FIXED 2026-09-08 - sectors on the detail endpoint now returns a real ARRAY (was a JSON-encoded string)","nothing","parseSectors in acn-adapter.ts:23 already accepted both shapes, so the change landed without a code edit"
+    ART-02,Article,"Four list endpoints return four different shapes, including companyID vs companyId casing","every consumer needs its own mapper and casing bugs fail silently","acn-adapter.ts, news-list.ts and company-articles.ts each map separately"
+    ART-03,Article,"language is missing from the homepage, by-industry and search list endpoints","language tags cannot render in most feeds","CompanyArticle.language left optional and undefined"
+    TAX-01,Taxonomy,"API returns comma sector spellings like 'Construct, Engineering' while lib/sectors.ts uses space forms","exact-match sector filters return nothing AND those articles map to no category, so they vanish from homepage rows",NONE
+    EVT-01,Event,"No subtitle or descriptive line - only description, which holds an opaque acronym","readers cannot tell what an event is","hand-entered subtitle in src/data/mock-events.ts"
+    EVT-02,Event,"No opening time or timezone - dates are date-only at midnight with no offset","a countdown can only be honest to the day","mock-events.ts hardcodes +08:00 and event-date.ts parses the offset out"
+    EVT-03,Event,"PARTLY FIXED 2026-09-08 - compId and companies[] are now populated, but on only 121 of 839 events (14%). Previously they were null/[] on every event","the other 718 events can never resolve releases - there is still no direct event-to-release relation, only organiser-company + year via /api/Events/company/{id}/year/{year}","services/events.ts:fetchEventReleases covers the 121; the rest render an empty release list"
+
+blockers[16]{id,severity,what,where,owner,status}:
+  API-EVENTS-500,HIGH,"New API /api/Events/{id} returns 500: 'The required column Companies was not present in the results of a FromSql operation'","backend acnnewswire-api",backend,"Same bug class as the Sectors 500 that was fixed on the Articles endpoints 2026-09-08 - point the backend at that fix. WORKED AROUND on the frontend: services/events.ts:fetchEvent reads the list endpoint and filters, so nothing is blocked today"
+  LEGACY-API-503,MEDIUM,"The whole legacy host is down","https://www.acnnewswire.com/acnnewswireapi - gap INF-01",backend,"DOWNGRADED from CRITICAL 2026-09-08. It is no longer the company archive source - company-articles.ts was cut over to the new API. It is now enrichment ONLY: language, location, views, supplier and origin url. Its one visible cost is that articles canonicalise to /article/english/ regardless of language. The call is bounded by a 2s AbortSignal so a dead host cannot stall article rendering"
+  CREDS-IN-LOGMD,CRITICAL,"log.md is committed to git and contains plaintext employee username/password pairs, the assembled AB_USERS value, and the admin credential","log.md, roughly lines 421-437 and 780",us,"UNDOCUMENTED ANYWHERE ELSE. Rotate the passwords and purge from git history - deleting the file alone will not clear history"
+  SEC-01,CRITICAL,"Public /api/Companies/{id} returns plaintext username and password, which reach the browser","gap SEC-01",backend,"Strip from the DTO. Frontend already ignores the fields but they are still transmitted"
+  DEV-HOST-IN-PROD,HIGH,"Seven hardcoded references to development.acnnewswire.com, so a production deploy calls the dev host. No prod switch exists and NEXT_PUBLIC_API_BASE_URL is a no-op","src/services/*.ts",us,"Undocumented. Commit d64d677 says dev.acnnewswire.com but the code uses development.acnnewswire.com"
+  SEARCH-INDEX-STALE,MEDIUM,"/search is served from a static snapshot, so it goes stale between rebuilds and cannot see anything published after the last run","src/data/prefetched-articles.json",us,"DOWNGRADED 2026-09-09 - the snapshot is now rebuildable with scripts/prefetch-articles.mjs and holds real ids. It was CRITICAL-in-effect before that: every one of its 292 ids 404'd. Re-run the script periodically, or replace with a live query once the API grows a keyword search parameter"
+  TAXONOMY-STEP3,HIGH,"Homepage sector rows drop roughly 28 articles because lib/sector-mapper.ts was left un-migrated, so search and the homepage disagree on what belongs to a sector","docs/taxonomy-migration.md section 5 step 3",us,"KNOWN AND INTENTIONAL - held back because it is a visible change. The fix is two one-line delegations: getSectorCategory = sectorOf, getArticleCategories = sectorsOf"
+  TAX-01,HIGH,"Comma vs space sector spellings make exact-match filters return nothing","gap TAX-01",both,"No workaround. Root cause is TAX-02, the unused GET /api/v1/Sector/GetSectors endpoint the frontend bypasses by hardcoding"
+  EVT-03,HIGH,"No event-to-release relation on any endpoint","gap EVT-03",backend,"Hand-mapped in event-article-mappings.json, 1 of 13 events done"
+  REACT-COMPILER-DANGLING,MEDIUM,"reactCompiler:true was DELETED from next.config.ts as a hotfix (not commented out), but babel-plugin-react-compiler is still a pinned devDep with nothing consuming it","package.json:26 and commit 1ab5299",us,"Undocumented - no comment in next.config.ts. Either re-enable and retest, or drop the dep. The clearest unresolved hotfix in the tree"
+  EVENTIMAGES-NOT-WHITELISTED,MEDIUM,"EVENT_IMAGE_BASE targets www.acnnewswire.com/eventimages but only /images/company/** is in remotePatterns, so next/image would reject event art",next.config.ts,us,Undocumented
+  EVENTS-TWO-DATASETS,MEDIUM,"The events section runs on two disjoint datasets simultaneously: hand-written mock events keyed by slug for detail pages, and live API events keyed by numeric id for the listing","src/data/mock-events.ts vs src/services/events.ts",us,"Undocumented. The individual field gaps are in _gaps.csv but the two-dataset split is not"
+  README-STALE,MEDIUM,"About 12 false claims send new developers down dead ends",README.md,us,Undocumented
+  LINT-BROKEN,MEDIUM,"npm run lint cannot run at all: 'Cannot find module ajv/lib/refs/json-schema-draft-04.json' from eslint/lib/shared/ajv.js. The overrides.ajv ^8.18.0 pin in package.json is the cause - ajv v8 removed that file and eslint still requires it","package.json:31 overrides.ajv",us,"Found 2026-09-08, undocumented anywhere else. So the repo has NEITHER a test runner NOR a working linter"
+  NO-TEST-RUNNER,MEDIUM,"Neither file in src/lib/__tests__ can run - no test script and no runner installed. languages.test.ts is a real 31-assertion suite that needs tsx",package.json,us,"Known and noted in taxonomy-migration.md"
+  GLOBALS-CSS-TYPO,LOW,"globals.css defines --text-csolor while body reads var(--text-color), so body colour silently falls back. The dark-mode block is also commented out",src/app/globals.css:7,us,Undocumented
+
+current_steps[14]{priority,step,owner,why}:
+  1,"Redeploy. The Sectors 500 is fixed and articles render again - the deployed portal is still serving the broken build",us,"Nothing ships until a fresh Netlify build runs. Verify an article URL on portal.acnnewswire.com afterwards, not just locally"
+  2,"Get the backend to fix /api/Events/{id} - same 'required column' FromSql bug they just fixed on Articles",backend,"Frontend works around it by filtering the list endpoint, but that pulls 2.4MB to read one event"
+  3,"Rotate the A/B employee passwords and purge log.md from git history",us,"Committed plaintext credentials"
+  4,"Have the backend strip username and password from the Companies DTO",backend,"Credential disclosure on a public endpoint (SEC-01)"
+  5,"Introduce an env-driven API base and stop shipping the dev host in production builds",us,"Deploy hygiene; also makes it possible to point at a healthy backend without a code change"
+  6,"Finish taxonomy migration step 3 - two one-line delegations in sector-mapper.ts",us,"Makes the homepage and search agree and surfaces roughly 28 currently-hidden articles"
+  7,"Decide the search story. NOTE: a live query is NOT currently possible - /api/Articles/search has no keyword parameter (only ExchangeId/SectorName/CompanyName/TickerId/Country) and returns [] for all of them. So either re-run scripts/prefetch-articles.js as a stopgap, or ask the backend for a keyword search endpoint",us,"The search index has been frozen since June and cannot return anything published since May"
+  7b,"Get the legacy host back up or replace it",backend,"Downgraded from critical - it is now enrichment only. Without it every article canonicalises to /article/english/ regardless of the language it is written in"
+  8,"Register the first real A/B experiment: add an EXPERIMENTS entry, author public/ab-variants/<id>.css, add data-ab-target to the target markup",us,"The voting infrastructure is finished and idle - this is the only thing standing between it and use"
+  9,"Rewrite README.md",us,"Roughly 12 claims are false; it actively misleads anyone onboarding"
+  10,"Decide reactCompiler - re-enable in next.config.ts and retest, or drop babel-plugin-react-compiler",us,"Dangling devDep from an undocumented hotfix"
+  11,"Delete dead code: lib/azure.ts, lib/search-mock-data.ts, lib/region-mapping.ts, services/index.ts, services/mock-press-release.ts, __tests__/sector-mapper.test.ts, and the next-intl dependency",us,"Reduces the surface a newcomer has to read"
+  12,"Add a test runner so src/lib/__tests__/languages.test.ts can run",us,"A real 31-assertion suite exists and is currently unrunnable"
+  13,"Commit the schema-capture scripts (probe.py, gen.py, gaps.py) and the taxonomy verification script",us,"They live only in a session scratchpad, so docs/api-schemas cannot be regenerated today"
+
+history:
+  recent_arc: "Aug 15 page building (sidebars, company page, language tags) -> Aug 27 documenting the backend's shortcomings (33 schema CSVs, 28 catalogued gaps, taxonomy migration plan) -> Sep 4 building an internal A/B design-review tool. The Aug 27 pivot is the tell: feature work hit a wall on backend data, so the effort went into writing the backend hand-off instead."
+  hotfix_cluster_2026_05_28[3]{item,verdict}:
+    nextjs_downgrade,"Did NOT stick and does not conflict with today's ^16.2.6. f387c63 went 16.2.4->16.2.3, then 38eae4c went 16.2.3->16.2.6. It was also nearly a no-op since ^16.2.4 already resolved to 16.2.6 - the real fix was the route.ts edits, so the commit messages misattribute it"
+    dompurify_swap,"RESOLVED permanently. isomorphic-dompurify is gone, plain dompurify@^3.4.7 is in. Only README.md:29 is still stale about it"
+    react_compiler,"NOT resolved - worked around by deletion. See the REACT-COMPILER-DANGLING blocker"
+  commit_map[6]{commit,date,scope}:
+    ad42ca1,2026-09-04,"A/B vote infrastructure. 26 files, +2059. Also committed log.md"
+    e875b51,2026-08-27,"Taxonomy steps 2-4. 6 files: filter-data, search, taxonomy, event-industries, MainNav/Industry"
+    1a14037,2026-08-27,"44 files, +2322. The whole docs/api-schemas capture, taxonomy-migration.md, lib/taxonomy.ts, mock-events.ts, event detail page and 6 event components"
+    b3bae2b,2026-08-15,"Sidebar tweaks; SocialLinks.tsx added"
+    d5ecde2,2026-08-15,"19 files, +1498. company-profile.ts, release-versions.ts, ArticleSidebar, CompanySidebar, Rail.tsx"
+    03691ef,2026-08-15,"LanguageTag.tsx, lib/languages.ts, languages.test.ts"
+
+not_built_at_all[4]{area,detail}:
+  portal,"No (portal) route group, no auth, no dashboard, billing or metrics code. README documents it as unbuilt"
+  localization,"next-intl installed but zero imports, no messages/ dir, no locale routing, no middleware. Entirely unstarted despite README claiming rewrites exist"
+  company_directory,"Still not built, but NO LONGER BLOCKED as of 2026-09-08: GET /api/Companies takes Page/Size and works. gap CO-04 and this row both used to say no company list endpoint existed - that is now false. Note SEC-01 before wiring it: that response still carries plaintext username/password"
+  reading_modes,"services/reading-mode.ts always returns chronological; company and sector modes fall through, gated on user accounts that do not exist"
+
+update_protocol:
+  cadence: "twice monthly"
+  next_review: 2026-09-21
+  steps[6]{step,how}:
+    1,"Re-probe api_health. Pull the endpoint list from https://development.acnnewswire.com/swagger/v1/swagger.json, then curl each one using REAL ids taken from the working list endpoints - otherwise a 404 from a missing record looks like breakage"
+    2,"Re-read docs/api-schemas/_gaps.csv and update the gaps tally plus any promoted or closed blockers"
+    3,"Run git log --oneline since meta.updated; update history and add any new routes, components or services"
+    4,"Prune the blockers table. Remove fixed items outright - a stale CRITICAL is worse than no entry"
+    5,"Rewrite current_steps in priority order. Delete completed steps rather than marking them done, so the list stays short enough to act on"
+    6,"Bump meta.updated and meta.next_review"
+  keep_honest[3]{rule,why}:
+    verify_before_recording,"Probe or read the code rather than copying a previous claim forward - two entries in this file were wrong until re-probed"
+    distinguish_known_from_found,"Mark whether a gap is documented in _gaps.csv or was found ad hoc, so the backend hand-off stays accurate"
+    no_secrets,"Never record credentials, tokens or env values in this file - record the variable name and where it is read"

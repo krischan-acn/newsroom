@@ -1,14 +1,22 @@
 // app/events/[eventId]/page.tsx
 //
-// Event detail page. Served entirely from src/data/mock-events.ts — this route
-// is a design preview and makes no API call. Slugs that are not in that file
-// (including the numeric ids the live /events listing uses) fall through to
-// notFound(), so nothing here can shadow a real event.
+// Event detail page, resolved in two steps.
+//
+// A slug in src/data/mock-events.ts renders the curated page below — four
+// hand-built showcase events, unchanged, kept for client demos. Anything else
+// is looked up against the live events API and rendered by ./LiveEvent.tsx,
+// which is where the numeric ids the /events listing links to now land.
+//
+// Curated first, deliberately: those four are the design reference, and a slug
+// can never collide with a numeric API id. Only ids the API does not know
+// fall through to notFound().
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getMockEvent, MOCK_EVENTS, type MockEvent } from '@/data/mock-events';
+import { fetchEvent, fetchEventReleases, eventYear } from '@/services/events';
+import { LiveEventPage } from './LiveEvent';
 import { EventCountdown } from '@/components/events/EventCountdown';
 import { EventReleaseItem } from '@/components/events/EventReleaseItem';
 import {
@@ -32,7 +40,27 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { eventId } = await params;
   const event = getMockEvent(eventId);
-  if (!event) return { title: 'Event not found | ACN Newswire' };
+
+  if (!event) {
+    const live = await fetchEvent(eventId);
+    if (!live) return { title: 'Event not found | ACN Newswire' };
+
+    const liveDates = formatEventRange(live.startDate, live.endDate);
+    const liveDescription = live.location
+      ? `${live.description}. ${liveDates}, ${live.location}.`
+      : `${live.description}. ${liveDates}.`;
+
+    return {
+      title: `${live.description} | ACN Newswire`,
+      description: liveDescription,
+      openGraph: {
+        title: live.description,
+        description: liveDescription,
+        url: `${SITE_URL}/events/${live.id}`,
+        type: 'website',
+      },
+    };
+  }
 
   const dates = formatEventRange(event.startDate, event.endDate);
   const description = `${event.subtitle}. ${dates}, ${event.venue}, ${event.city}. ${event.pressReleases.length} press releases from the show.`;
@@ -121,7 +149,16 @@ function StatBand({ event }: { event: MockEvent }) {
 export default async function EventPage({ params }: Props) {
   const { eventId } = await params;
   const event = getMockEvent(eventId);
-  if (!event) notFound();
+
+  if (!event) {
+    const live = await fetchEvent(eventId);
+    if (!live) notFound();
+
+    // There is still no event->release endpoint; the organiser company plus the
+    // year the show ran is the relation the API exposes. See fetchEventReleases.
+    const releases = await fetchEventReleases(live.compId, eventYear(live));
+    return <LiveEventPage event={live} releases={releases} />;
+  }
 
   const phase = eventPhase(event.startDate, event.endDate, Date.now());
 

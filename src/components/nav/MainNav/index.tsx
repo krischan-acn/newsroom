@@ -4,21 +4,30 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
 import logo from '../../../app/logo.svg';
 import "./MainNav.css";
 import MegaMenuNav from './MegaMenuNav';
 
-const NAV_ITEMS = [
-  { label: 'About', href: '/about' },
-  { label: 'Contact', href: '/contact' },
-  { label: 'Login', href: '/login', desktopOnly: true },
-  { label: 'Register', href: '/register', desktopOnly: true }
-]
+// No About / Contact / Login / Register items here for now.
+//
+// They used to link to /about, /contact, /login and /register - none of which
+// exist as routes in this app, so all four 404'd on click and Next's <Link>
+// prefetch 404'd them in the console on every page load as well.
+//
+// Briefly repointed at www.acnnewswire.com/aboutus/, /contactus/ and
+// /client/login.aspx, then pulled entirely: the portal has no About or Contact
+// page of its own yet, and "Login" here is misleading. There is no public
+// login. The only sign-in on this site is the employee A/B panel, which is
+// deliberately hidden - F2, or the unlabelled dot in TopNav (AbHiddenTrigger).
+// Putting a Login button in the header would advertise it, which is the exact
+// opposite of what it is for.
+//
+// Restore by re-adding a NAV_ITEMS array and a map in the two places marked
+// "Desktop Actions" and "Mobile Nav Items" below.
+
 
 export default function MainNav() {
   const [isOpen, setIsOpen] = useState(false)
-  const pathname = usePathname()
   const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null)
   const [isContainerClosing, setIsContainerClosing] = useState(false) // For final close
   const [isSwitching, setIsSwitching] = useState(false) // For menu transitions
@@ -105,26 +114,7 @@ export default function MainNav() {
                 </button>
               </form>
             </div>
-            {/* Desktop Actions - lg and up */}
-            <div className="hidden lg:flex items-center gap-1 self-center">
-              {NAV_ITEMS.map((item) => {
-                if (item.label === 'Login') {
-                  return <Link key={item.href} href={item.href} className="nav-link">{item.label}</Link>
-                }
-                if (item.label === 'Register') {
-                  return <Link key={item.href} href={item.href} className="nav-link">{item.label}</Link>
-                }
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`nav-link ${pathname === item.href ? 'active' : ''}`}
-                  >
-                    {item.label}
-                  </Link>
-                )
-              })}
-            </div>
+            {/* Desktop Actions - lg and up: intentionally empty, see NAV_ITEMS note above */}
           </div>
 
           {/* Desktop Mega Menu - second row on lg */}
@@ -219,50 +209,7 @@ export default function MainNav() {
                       </form>
                     </div>
 
-                    {/* Mobile Nav Items */}
-                    <div className="space-y-1">
-                      {NAV_ITEMS.map((item) => {
-                        // Special styling for login/register in mobile
-                        if (item.label === 'Login') {
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              onClick={() => setIsOpen(false)}
-                              className="block w-full px-4 py-3 text-center text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 transition"
-                            >
-                              {item.label}
-                            </Link>
-                          )
-                        }
-                        if (item.label === 'Register') {
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              onClick={() => setIsOpen(false)}
-                              className="block w-full px-4 py-3 text-center text-white bg-gray-900 border border-transparent rounded-full hover:bg-gray-800 transition mt-2"
-                            >
-                              {item.label}
-                            </Link>
-                          )
-                        }
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setIsOpen(false)}
-                            className={`block px-4 py-4 text-base border-b border-gray-100 transition ${
-                              pathname === item.href
-                                ? 'text-blue-600 font-medium'
-                                : 'text-gray-700 hover:text-gray-900'
-                            }`}
-                          >
-                            {item.label}
-                          </Link>
-                        )
-                      })}
-                    </div>
+                    {/* Mobile Nav Items: intentionally empty, see NAV_ITEMS note above */}
 
                     {/* Optional: Add language selector or other mobile-only items here */}
                     <div className="mt-8 pt-6 border-t border-gray-200">

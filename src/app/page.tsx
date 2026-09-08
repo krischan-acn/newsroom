@@ -23,7 +23,7 @@ export default async function Home() {
       fetchPressRelease(107230).catch((): PressReleaseData | null => null),
     ]),
     Promise.all(
-      CATEGORIES.map(cat => fetchArticlesByIndustry(cat.slug).catch((): NewsListItem[] => [])),
+      CATEGORIES.map(cat => fetchArticlesByIndustry(cat.apiIndustry).catch((): NewsListItem[] => [])),
     ),
   ]);
 

@@ -5,18 +5,21 @@ import { sanitizeText, sanitizeHeadline } from '@/lib/sanitize';
 const NEW_API_BASE = 'https://development.acnnewswire.com';
 const PHOTOS_BASE = 'https://photos.acnnewswire.com/';
 
-// The company feed comes from the legacy API. The current API's company
-// endpoint — /api/Articles/by-company/{id} — returns HTTP 500 for every id
-// ("The required column 'Sectors' was not present in the results of a 'FromSql'
-// operation"), and /api/Articles?Cid= filters by *country*, not company, so it
-// silently returns other companies' releases. This endpoint paginates properly
-// and is the only source that can serve a full archive today.
-// Switch COMPANY_FEED back to the new API once by-company is fixed.
-const LEGACY_API_BASE = 'https://www.acnnewswire.com/acnnewswireapi';
+// The company feed reads /api/Articles/by-company/{id}. It returned HTTP 500 for
+// every id until 2026-09-08 ("The required column 'Sectors' was not present in
+// the results of a 'FromSql' operation"), which is why this module used to lead
+// with the legacy GetNewsByCompanyId feed. That backend bug is fixed and the
+// legacy host has been 503 since 2026-08-27, so the legacy path was removed
+// rather than left as a fallback that can only fail.
+//
+// Verified on the live endpoint: pageNumber/pageSize paginate correctly, and the
+// rows carry sectors, bodyHtml and images that the legacy feed never returned.
+// Do not use /api/Articles?Cid= as a substitute — that filters by *country*, not
+// company, and silently returns other companies' releases.
 
 const REVALIDATE = 3600;
 
-/** The legacy endpoint rejects pageSize outside this range. */
+/** The endpoint rejects pageSize outside this range. */
 const MAX_PAGE_SIZE = 100;
 
 export interface CompanyArticle {
@@ -25,9 +28,9 @@ export interface CompanyArticle {
   dateTime: string;
   thumbImage: string | null;
   description: string | null;
-  // The list endpoints do not return a language field, so this is only
-  // populated on paths that have one — today that means search results.
-  // Rows without it simply render no tag.
+  // by-company does not return a language field, so this is only populated on
+  // paths that have one — today that means search results. Rows without it
+  // simply render no tag.
   language?: string | null;
 }
 
@@ -39,58 +42,9 @@ export interface CompanyArticlePage {
   hasPrevious: boolean;
 }
 
-interface LegacyCompanyNews {
-  articleId: number;
-  headline: string;
-  summary: string | null;
-  /** e.g. "Thursday, 06 August 2026 14:00" — not ISO. */
-  dateTime: string;
-  views: string | null;
-  photo: { thumbImage: string | null; bigImage: string | null; caption: string | null }[] | null;
-  companyLogo: string | null;
-}
-
-const MONTHS: Record<string, string> = {
-  january: '01', february: '02', march: '03', april: '04',
-  may: '05', june: '06', july: '07', august: '08',
-  september: '09', october: '10', november: '11', december: '12',
-};
-
-/**
- * The legacy feed formats dates as "Thursday, 06 August 2026 14:00". Normalising
- * to ISO here keeps every consumer (formatDateTime, JSON-LD, <time datetime>)
- * on one shape. Anything unparseable is passed through untouched — formatDateTime
- * falls back to printing the raw string rather than showing a broken date.
- */
-export function legacyDateToIso(raw: string | null | undefined): string {
-  if (!raw) return '';
-  const match = raw.match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
-  if (!match) return raw;
-
-  const [, day, monthName, year, hour = '00', minute = '00'] = match;
-  const month = MONTHS[monthName.toLowerCase()];
-  if (!month) return raw;
-
-  return `${year}-${month}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute}:00`;
-}
-
-function mapLegacyArticle(row: LegacyCompanyNews): CompanyArticle {
-  // bigImage is already an absolute URL on this endpoint, unlike the new API
-  // where it is a bare filename.
-  const image = row.photo?.[0]?.bigImage ?? null;
-
-  return {
-    id: row.articleId,
-    headline: sanitizeHeadline(row.headline),
-    dateTime: legacyDateToIso(row.dateTime),
-    thumbImage: image
-      ? (/^https?:\/\//i.test(image) ? image : `${PHOTOS_BASE}${image}`)
-      : null,
-    description: sanitizeText(row.summary) || null,
-  };
-}
-
-function mapNewApiArticle(a: NewApiArticle): CompanyArticle {
+function mapArticle(a: NewApiArticle): CompanyArticle {
+  // bigImage is a bare filename on this endpoint, unlike the legacy feed where
+  // it arrived absolute.
   const bigImage = a.images?.[0]?.bigImage;
   return {
     id: a.articleId,
@@ -101,17 +55,22 @@ function mapNewApiArticle(a: NewApiArticle): CompanyArticle {
   };
 }
 
-async function fetchLegacyPage(
+/**
+ * One page of a company's press releases, newest first.
+ *
+ * A page past the last one answers 404 rather than an empty array, so a
+ * non-ok response is treated as "no rows" rather than an error.
+ */
+async function fetchPage(
   compId: number,
   page: number,
   pageSize: number,
-): Promise<LegacyCompanyNews[]> {
+): Promise<NewApiArticle[]> {
   try {
     const res = await fetch(
-      `${LEGACY_API_BASE}/api/v1/Company/GetNewsByCompanyId/${compId}?pageNumber=${page}&pageSize=${pageSize}`,
-      { next: { revalidate: REVALIDATE } },
+      `${NEW_API_BASE}/api/Articles/by-company/${compId}?pageNumber=${page}&pageSize=${pageSize}`,
+      { next: { revalidate: REVALIDATE }, headers: { Accept: 'application/json' } },
     );
-    // A company past its last page (or with no releases at all) answers 404.
     if (!res.ok) return [];
     const raw = await res.json();
     return Array.isArray(raw) ? raw : [];
@@ -148,12 +107,12 @@ export async function fetchCompanyArticlesPage(
   if (!Number.isFinite(id) || id <= 0) return empty;
 
   const [rows, nextRows] = await Promise.all([
-    fetchLegacyPage(id, safePage, safeSize),
-    fetchLegacyPage(id, safePage + 1, 1),
+    fetchPage(id, safePage, safeSize),
+    fetchPage(id, safePage + 1, 1),
   ]);
 
   return {
-    articles: rows.map(mapLegacyArticle),
+    articles: rows.map(mapArticle),
     page: safePage,
     pageSize: safeSize,
     hasNext: nextRows.length > 0,
@@ -161,11 +120,7 @@ export async function fetchCompanyArticlesPage(
   };
 }
 
-/**
- * The handful of related releases shown under an article. Reads from the same
- * legacy feed as the company page, falling back to the new API's by-company
- * endpoint so this starts returning richer rows the moment that is repaired.
- */
+/** The handful of related releases shown under an article. */
 export async function fetchCompanyArticles(
   compId: string | undefined | null,
   limit = 5,
@@ -175,18 +130,6 @@ export async function fetchCompanyArticles(
   const id = Number(compId);
   if (!Number.isFinite(id) || id <= 0) return [];
 
-  const rows = await fetchLegacyPage(id, 1, limit);
-  if (rows.length > 0) return rows.map(mapLegacyArticle);
-
-  try {
-    const res = await fetch(`${NEW_API_BASE}/api/Articles/by-company/${id}`, {
-      next: { revalidate: REVALIDATE },
-    });
-    if (!res.ok) return [];
-    const raw = await res.json();
-    if (!Array.isArray(raw)) return [];
-    return (raw as NewApiArticle[]).slice(0, limit).map(mapNewApiArticle);
-  } catch {
-    return [];
-  }
+  const rows = await fetchPage(id, 1, Math.min(MAX_PAGE_SIZE, Math.max(1, limit)));
+  return rows.slice(0, limit).map(mapArticle);
 }

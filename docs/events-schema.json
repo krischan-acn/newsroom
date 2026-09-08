@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://portal.acnnewswire.com/schemas/events.json",
+  "title": "Events page data contract",
+  "description": "The shapes the events pages render, as defined in src/services/events.ts. Event and EventCompany back /events and /events/<id>; EventRelease backs the release feed on an event page. These are the mapped frontend types, not the raw API payloads.",
+  "type": "object",
+  "properties": {
+    "event": { "$ref": "#/$defs/Event" },
+    "releases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/EventRelease" }
+    }
+  },
+  "required": ["event", "releases"],
+  "$defs": {
+    "Event": {
+      "title": "Event",
+      "description": "One event, mapped from GET /api/Events. Also serves the detail page, because GET /api/Events/{id} returns 500.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "startDate",
+        "endDate",
+        "description",
+        "location",
+        "url",
+        "pressReleaseUrl",
+        "photo",
+        "compId",
+        "companies"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Event id. The URL segment for /events/<id>.",
+          "examples": [163]
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 WITH an explicit +08:00 offset, stamped on by toEventIso(). The API returns an offsetless date-only midnight; the offset is added so the date renders in the event's own timezone rather than the visitor's.",
+          "examples": ["2009-07-16T00:00:00+08:00"]
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "As startDate, but pushed to 23:59:59 of its day so an event on its final day still reads as running.",
+          "examples": ["2009-07-17T23:59:59+08:00"]
+        },
+        "description": {
+          "type": "string",
+          "description": "The event name. The API has no separate name/title field, so this is what the page renders as its h1.",
+          "examples": ["3rd Asian Publishing Convention"]
+        },
+        "location": {
+          "type": "string",
+          "description": "Free-text location, unstructured. Empty string when absent, never null.",
+          "examples": ["Manila", "Singapore, Shanghai, Hong Kong"]
+        },
+        "url": {
+          "type": "string",
+          "description": "Organiser website, normalised to an absolute https:// URL. Empty string when absent.",
+          "examples": ["https://www.publishingconvention.com"]
+        },
+        "pressReleaseUrl": {
+          "type": ["string", "null"],
+          "description": "Always null. Retained from the original shape; the release feed now comes from EventRelease instead.",
+          "examples": [null]
+        },
+        "photo": {
+          "type": ["string", "null"],
+          "description": "Absolute URL under https://www.acnnewswire.com/eventimages/. NOT in next.config.ts remotePatterns, so it must be rendered with a raw <img>, not next/image.",
+          "examples": ["https://www.acnnewswire.com/eventimages/ap10.jpg"]
+        },
+        "compId": {
+          "type": ["integer", "null"],
+          "description": "Organiser company id. The only key that relates an event to its releases. Null on most events (121 of 839 carry one) — those can never resolve a release feed.",
+          "examples": [714, null]
+        },
+        "companies": {
+          "type": "array",
+          "description": "Organiser companies, deduped by id. The API repeats the same company once per release it has (up to 167 times), so this is collapsed in mapEvent. In practice length is 0 or 1, and companies[0] is treated as the organiser.",
+          "items": { "$ref": "#/$defs/EventCompany" }
+        }
+      }
+    },
+    "EventCompany": {
+      "title": "EventCompany",
+      "description": "An organiser company attached to an event.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "logo", "url"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "examples": [714]
+        },
+        "name": {
+          "type": "string",
+          "description": "Sanitised company name. Entries that map to an empty name are dropped.",
+          "examples": ["Asian Publishing Convention"]
+        },
+        "logo": {
+          "type": ["string", "null"],
+          "description": "Absolute URL under https://www.acnnewswire.com/images/company/.",
+          "examples": ["https://www.acnnewswire.com/images/company/AP10.gif"]
+        },
+        "url": {
+          "type": ["string", "null"],
+          "description": "Company website, normalised to absolute https://.",
+          "examples": ["https://publishingconvention.com"]
+        }
+      }
+    },
+    "EventRelease": {
+      "title": "EventRelease",
+      "description": "A press release filed against an event, from GET /api/Events/company/{compId}/year/{year}. Ids are real, so these rows link to /article/<id>.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "headline", "summary", "dateTime", "companyId"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "articleId. Links to /article/<id>.",
+          "examples": [1978]
+        },
+        "headline": {
+          "type": "string",
+          "examples": ["Winners Receive Asian Multimedia Publishing Awards 2009"]
+        },
+        "summary": {
+          "type": ["string", "null"],
+          "description": "Null when the API returns an empty summary.",
+          "examples": ["Eight winners and 16 excellence awardees from seven categories were awarded."]
+        },
+        "dateTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Mapped from systemDate. No offset — unlike Event.startDate, this is passed through as the API returns it.",
+          "examples": ["2009-07-24T17:36:15"]
+        },
+        "companyId": {
+          "type": ["integer", "null"],
+          "examples": [2, null]
+        }
+      }
+    }
+  }
+}

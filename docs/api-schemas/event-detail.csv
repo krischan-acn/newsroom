@@ -1,0 +1,13 @@
+﻿field,json_type,note
+id,integer,spec-derived from /api/Events; detail endpoint returned 500
+startDate,string,spec-derived from /api/Events; detail endpoint returned 500
+endDate,string,spec-derived from /api/Events; detail endpoint returned 500
+description,string,spec-derived from /api/Events; detail endpoint returned 500
+location,string,spec-derived from /api/Events; detail endpoint returned 500
+url,string,spec-derived from /api/Events; detail endpoint returned 500
+inUrl,string,spec-derived from /api/Events; detail endpoint returned 500
+eventImage,string,spec-derived from /api/Events; detail endpoint returned 500
+lid,string,spec-derived from /api/Events; detail endpoint returned 500
+publish,string,spec-derived from /api/Events; detail endpoint returned 500
+compId,integer,spec-derived from /api/Events; detail endpoint returned 500
+companies,array,spec-derived from /api/Events; detail endpoint returned 500
