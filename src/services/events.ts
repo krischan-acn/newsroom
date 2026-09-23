@@ -1,11 +1,9 @@
 // services/events.ts
 import { cache } from 'react';
-import { unstable_cache } from 'next/cache';
 import { sanitizeText, sanitizeHeadline } from '@/lib/sanitize';
 import { apiInit } from '@/lib/api-timeout';
 
 const NEW_API_BASE = 'https://development.acnnewswire.com';
-const EVENT_IMAGE_BASE = 'https://www.acnnewswire.com/eventimages/';
 
 const REVALIDATE = 3600;
 
@@ -39,27 +37,42 @@ export interface EventRelease {
   companyId: number | null;
 }
 
-interface AcnEventCompany {
-  companyID: number;
-  companyName: string | null;
-  logoFileName: string | null;
-  topLogoFileName: string | null;
-  companyURL: string | null;
+/**
+ * The organiser as /full returns it: already deduped, already absolute.
+ *
+ * Note the casing. Every other endpoint spells this `companyID` with a capital
+ * D and ships a bare filename in `logoFileName`; /full spells it `id` and
+ * returns `logo` and `url` as absolute URLs. Do not reuse the AcnEventCompany
+ * shape from the older endpoints here.
+ */
+interface AcnEventOrganiser {
+  id: number;
+  name: string | null;
+  logo: string | null;
+  url: string | null;
 }
 
-interface AcnEvent {
+/**
+ * A row from /api/Events/full.
+ *
+ * This is the shape contracts/event.after.json asked the API team for, and it
+ * is what they shipped: `name` instead of `description`, real +08:00 offsets,
+ * `endDate` at 23:59:59, absolute `url` and `photo`, a boolean `isPublished`,
+ * and `organiserId`/`organisers[]` in place of `compId`/`companies[]`. The
+ * `lid`, `inUrl` and `pressReleaseUrl` fields are gone — none carried
+ * information.
+ */
+interface AcnEventFull {
   id: number;
+  name: string | null;
   startDate: string;
   endDate: string;
-  description: string;
-  location: string;
-  url: string;
-  inUrl: string;
-  eventImage: string;
-  lid: string;
-  publish: string;
-  compId: number | null;
-  companies: AcnEventCompany[] | null;
+  location: string | null;
+  url: string | null;
+  photo: string | null;
+  isPublished: boolean;
+  organiserId: number | null;
+  organisers: AcnEventOrganiser[] | null;
 }
 
 interface AcnEventRelease {
@@ -70,136 +83,108 @@ interface AcnEventRelease {
   companyId: number | null;
 }
 
-const LOGO_BASE = 'https://www.acnnewswire.com/images/company/';
-
-function mapCompany(c: AcnEventCompany): EventCompany {
-  return {
-    id: c.companyID,
-    name: sanitizeText(c.companyName),
-    logo: c.logoFileName ? `${LOGO_BASE}${c.logoFileName}` : null,
-    url: c.companyURL
-      ? (/^https?:\/\//i.test(c.companyURL) ? c.companyURL : `https://${c.companyURL}`)
-      : null,
-  };
-}
-
 /**
- * The events endpoint returns date-only midnights with no offset
- * ("2009-07-16T00:00:00" — gap EVT-02: there is no opening time or timezone on
- * any event record). Left as-is, components/events/event-date.ts would read
- * them with the UTC getters after JS had parsed them as *local* time, landing a
- * day early for any visitor east of Greenwich.
+ * The wire now stamps its own offset, so this is a guard rather than a patch.
  *
- * So an explicit offset is stamped on here. +08:00 matches the convention
- * src/data/mock-events.ts already uses and the region ACN's shows run in. The
- * end date is pushed to the close of its day so an event on its final day still
- * reads as running rather than ended.
+ * /api/Events/full returns "2009-07-16T00:00:00+08:00" — a real offset, and an
+ * `endDate` already pushed to 23:59:59. Both of those used to be invented here
+ * because the old endpoint sent offsetless midnights that a browser would read
+ * in the VISITOR's zone, landing an event a day early west of the wire.
  *
- * This is a display-honesty patch over missing data, not a fact from the API —
- * drop it if the backend ever returns real times with offsets.
+ * The stamping is kept only for a value that arrives without an offset, which
+ * /full is not expected to produce. It is cheap, and it means a backend
+ * regression degrades to the old display-patch behaviour instead of to the
+ * off-by-one-day bug.
  */
 const EVENT_TZ_OFFSET = '+08:00';
 export const EVENT_TZ_LABEL = 'SGT';
 
 function toEventIso(raw: string, endOfDay = false): string {
   if (!raw) return '';
-  // Already carries an offset (or a Z) - trust it.
+  // Already carries an offset (or a Z) - trust it. This is now the normal path.
   if (/([+-]\d{2}:\d{2}|Z)$/.test(raw)) return raw;
   const day = raw.slice(0, 10);
   return `${day}T${endOfDay ? '23:59:59' : '00:00:00'}${EVENT_TZ_OFFSET}`;
 }
 
-function mapEvent(e: AcnEvent): Event {
-  // The API repeats the same company once per release it has, so dedupe by id.
-  const seen = new Set<number>();
+/**
+ * Wire row → app model.
+ *
+ * The app-facing `Event` interface is deliberately unchanged by the migration:
+ * `name` maps back onto `description` and `organiserId`/`organisers` back onto
+ * `compId`/`companies`, so no component, route or mock had to move. Renaming
+ * the app model to match the wire is a separate, larger change that has to land
+ * in this repo and acn-admin together — see contracts/event.after.json.
+ *
+ * Everything this function used to repair is now done upstream: no scheme to
+ * prefix onto `url`, no host to prefix onto the image, and no organiser
+ * dedupe — /full sends each organiser once, where the old endpoint repeated it
+ * once per release the organiser had (167 copies on the worst event).
+ */
+function mapEvent(e: AcnEventFull): Event {
   const companies: EventCompany[] = [];
-  for (const raw of e.companies ?? []) {
-    if (!raw || seen.has(raw.companyID)) continue;
-    seen.add(raw.companyID);
-    const company = mapCompany(raw);
-    if (company.name) companies.push(company);
+  for (const raw of e.organisers ?? []) {
+    if (!raw) continue;
+    const name = sanitizeText(raw.name);
+    if (name) companies.push({ id: raw.id, name, logo: raw.logo, url: raw.url });
   }
 
   return {
     id: e.id,
     startDate: toEventIso(e.startDate),
     endDate: toEventIso(e.endDate, true),
-    description: sanitizeText(e.description),
+    description: sanitizeText(e.name),
     location: sanitizeText(e.location),
-    url: e.url ? (e.url.startsWith('http') ? e.url : `https://${e.url}`) : '',
+    url: e.url ?? '',
     pressReleaseUrl: null,
-    photo: e.eventImage ? `${EVENT_IMAGE_BASE}${e.eventImage}` : null,
-    compId: e.compId ?? null,
+    photo: e.photo ?? null,
+    compId: e.organiserId ?? null,
     companies,
   };
 }
 
 /**
- * The list endpoint is the only working way to read events, so both fetchEvents
- * and fetchEvent go through this one call and share its cache entry.
+ * The whole published archive, in one request.
  *
- * It PAGES. pageSize is honoured and the default is only 10, so a single
- * unpaged call silently returns a tiny arbitrary slice. The API also does not
- * order by date - page 1 is mostly 2007-2015 shows - so truncating the fetch
- * drops the upcoming events entirely, which is the half anyone visiting /events
- * actually wants. There were 839 events (816 published) at the last count.
+ * /api/Events/full replaced a sequential sweep of up to 20 pages against
+ * /api/Events. It also removed the reason that sweep could not be cached the
+ * way the rest of this service layer is: the old response was ~2.65MB because
+ * of the repeated-organiser bug, over Next's 2MB cache ceiling, so `next:
+ * { revalidate }` there would silently do nothing and the mapped result had to
+ * be wrapped in unstable_cache instead. /full returns the same 816 events in
+ * 286KB, which fits, so this is back on the fetch-site caching convention the
+ * BIBLE specifies and unstable_cache is gone.
  *
- * Deliberately NOT cached at the fetch() call site, which is the convention
- * everywhere else in this service layer: the full sweep is ~2.6MB because the
- * API repeats an event's organiser once per release it has (one event ships the
- * same company 167 times), and Next refuses to cache an entry over 2MB - so
- * `next: { revalidate }` here would silently do nothing.
+ * `PageSize` is not capped on this route (unlike `Size` on /api/Companies,
+ * which 400s over 100), and 2000 comfortably clears the 816 rows on the wire.
  *
- * Caching the *mapped* result instead sidesteps that: mapEvent dedupes those
- * repeats, taking 816 events down to ~233KB. Hence unstable_cache below.
+ * /full is published-only — the 23 events the wire marks unpublished are not in
+ * it, and 404 on the detail route. That is exactly what this site wants, and it
+ * is why the admin panel keeps the legacy sweep alongside this call.
  */
-const PAGE_SIZE = 500;
-/** Safety stop, so a misbehaving endpoint cannot spin this forever. */
-const MAX_PAGES = 20;
+const PAGE_SIZE = 2000;
 
-async function fetchRawEventPage(page: number): Promise<AcnEvent[]> {
+/**
+ * React cache() collapses the several calls a single render can make (page +
+ * generateMetadata + fetchEvent) into one; the fetch cache holds it across
+ * requests for REVALIDATE seconds.
+ */
+const loadEvents = cache(async (): Promise<Event[]> => {
   try {
     const res = await fetch(
-      `${NEW_API_BASE}/api/Events?pageNumber=${page}&pageSize=${PAGE_SIZE}`,
-      // Timed out like the rest: this sweep is sequential over up to MAX_PAGES,
-      // so an unreachable host would otherwise stall for 20s per page before
-      // the loop gave up.
-      apiInit({ cache: 'no-store', headers: { Accept: 'application/json' } }),
+      `${NEW_API_BASE}/api/Events/full?PageNumber=1&PageSize=${PAGE_SIZE}`,
+      apiInit({ next: { revalidate: REVALIDATE }, headers: { Accept: 'application/json' } }),
     );
     if (!res.ok) return [];
     const raw = await res.json();
-    return Array.isArray(raw) ? raw : [];
+    if (!Array.isArray(raw)) return [];
+    // isPublished is filtered upstream; re-checked so a change of heart on the
+    // wire cannot put an unpublished event on the public site.
+    return (raw as AcnEventFull[]).filter((e) => e.isPublished !== false).map(mapEvent);
   } catch {
     return [];
   }
-}
-
-async function fetchRawEvents(): Promise<AcnEvent[]> {
-  const all: AcnEvent[] = [];
-  for (let page = 1; page <= MAX_PAGES; page++) {
-    const rows = await fetchRawEventPage(page);
-    all.push(...rows);
-    // A short page is the last page - the endpoint returns no total count.
-    if (rows.length < PAGE_SIZE) break;
-  }
-  return all;
-}
-
-/**
- * unstable_cache persists the small mapped array across requests; React cache()
- * collapses the several calls a single render can make (page + generateMetadata
- * + fetchEvent) into one.
- */
-const loadEvents = cache(
-  unstable_cache(
-    async (): Promise<Event[]> => {
-      const raw = await fetchRawEvents();
-      return raw.filter((e) => e.publish === 'y').map(mapEvent);
-    },
-    ['acn-events-list'],
-    { revalidate: REVALIDATE, tags: ['events'] },
-  ),
-);
+});
 
 export async function fetchEvents(): Promise<Event[]> {
   return loadEvents();
@@ -208,18 +193,34 @@ export async function fetchEvents(): Promise<Event[]> {
 /**
  * A single event by numeric id.
  *
- * Deliberately reads the list endpoint and filters, rather than calling
- * /api/Events/{id}: that route has returned HTTP 500 since at least 2026-09-07
- * ("The required column 'Companies' was not present in the results of a
- * 'FromSql' operation") and still did when re-probed on 2026-09-08. The list
- * endpoint returns the *same* per-event object, companies included, so nothing
- * is lost by reading it here — and both calls share one cache entry.
+ * This now goes straight at /api/Events/{id}/full. The old /api/Events/{id}
+ * answered 500 for every id ("The required column 'Companies' was not present
+ * in the results of a 'FromSql' operation") from at least 2026-09-07 until the
+ * /full routes shipped, and it STILL does — the fix landed on /full, not on the
+ * original route. So this reads the /full detail and falls back to the cached
+ * list, which costs nothing when the list is already warm and keeps the page
+ * working if the detail route regresses.
  *
- * Switch to /api/Events/{id} once the backend fixes that column.
+ * An unpublished or unknown id is a 404 here, which correctly becomes null.
  */
 export async function fetchEvent(id: string | number): Promise<Event | null> {
   const numeric = Number(id);
   if (!Number.isFinite(numeric) || numeric <= 0) return null;
+
+  try {
+    const res = await fetch(
+      `${NEW_API_BASE}/api/Events/${numeric}/full`,
+      apiInit({ next: { revalidate: REVALIDATE }, headers: { Accept: 'application/json' } }),
+    );
+    if (res.ok) {
+      const raw = (await res.json()) as AcnEventFull | null;
+      if (raw && typeof raw.id === 'number' && raw.isPublished !== false) return mapEvent(raw);
+    }
+    // 404 is a real answer - the event does not exist, or is unpublished.
+    if (res.status === 404) return null;
+  } catch {
+    // fall through to the list
+  }
 
   const events = await loadEvents();
   return events.find((e) => e.id === numeric) ?? null;
@@ -228,10 +229,12 @@ export async function fetchEvent(id: string | number): Promise<Event | null> {
 /**
  * The releases filed against an event.
  *
- * There is still no direct event→release endpoint. The relation available today
- * is the organiser company plus the year the event ran, which is what
- * /api/Events/company/{companyId}/year/{year} keys on. Events whose compId is
- * null, or whose organiser filed nothing that year, correctly return [].
+ * Unchanged by the migration, and still the only event→release relation on the
+ * wire: the organiser company plus the year the event ran, which is what
+ * /api/Events/company/{companyId}/year/{year} keys on. It was already healthy;
+ * what changed is that `organiserId` now arrives populated, so the 108 events
+ * that have an organiser can actually resolve a feed. Events with no organiser,
+ * or whose organiser filed nothing that year, correctly return [].
  */
 export async function fetchEventReleases(
   compId: number | null | undefined,

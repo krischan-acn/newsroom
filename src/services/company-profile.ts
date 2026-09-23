@@ -2,24 +2,36 @@
 //
 // Assembles the company profile shown in the sidebar of /company/[id].
 //
-// Sources, and why there are still two:
-//   /api/Companies/{id}          → name, logo, boilerplate, sectors, tickers, contacts
-//   /api/Companies/{id}/details  → socials only
+// Source, singular, as of the /full migration:
+//   /api/Companies/{id}/full  → everything below
 // and then fills whatever is still blank from src/data/company-profiles.ts.
 //
-// This used to stitch in a third, /api/Articles/search, for tickers and the
-// vendor quote codes. That endpoint returns 0 rows for every input including
-// unfiltered (verified 2026-09-09), so it could only ever return null while
-// costing a request on every company render. It is gone, the same way the dead
-// legacy company feed was removed rather than left as a fallback that can only
-// fail. `tickers[]` on the company record is the real source and carries the
-// company's own listings rather than whichever exchange row happened to be
-// attached to an article.
+// This used to be two calls and was once three. /api/Articles/search went first:
+// it returned 0 rows for every input including unfiltered (verified 2026-09-09),
+// so it could only ever return null while costing a request on every company
+// render. Then /api/Companies/{id} + /api/Companies/{id}/details, the second of
+// which existed here solely to supply the social links.
 //
-// `/details` is kept for one reason: it is the only source of the social links.
-// Its established/listed/employees/address/phone/email fields came back blank on
-// 10/10 companies sampled — the client does not supply that data — so those are
-// read from `contacts[]` and the curated file instead, and are not chased here.
+// /full folds all of it into one request — it is the response
+// contracts/company.after.json asked for. Worth knowing about the merge:
+//
+//   · socials arrive as ONE object, not six sibling string fields.
+//   · the address is four NAMED fields (addressStreet/District/City/Country)
+//     rather than the positional addr1..addr4.
+//   · contacts[] carries the full shape — position, fax, description, format —
+//     that previously needed a separate /api/CompContacts call. The keys are
+//     `name`/`phone`/`email`, not the old `contactName`/`contactPhone`/
+//     `contactEmail`.
+//   · localised names are nested under `names`, keyed by language tag.
+//   · logos and `url` come back absolute.
+//   · `username`/`password` are GONE. They used to be returned in plaintext on
+//     this unauthenticated endpoint; the backend now strips them from every
+//     company DTO (re-verified on the list, detail, details and full routes).
+//
+// The profile block is still sparse — established/listed/employees/address/
+// phone/email came back null on every company sampled, before and after the
+// merge, because the client does not supply that data. Those keep coming from
+// contacts[] and the curated file, and are not chased here.
 
 import { sanitizeText } from '@/lib/sanitize';
 import { resolveIndustry } from '@/lib/taxonomy';
@@ -28,11 +40,10 @@ import { apiInit } from '@/lib/api-timeout';
 import { companyFromIndex } from '@/services/company-search';
 
 const NEW_API_BASE = 'https://development.acnnewswire.com';
-const LOGO_BASE = 'https://www.acnnewswire.com/images/company/';
 
 const REVALIDATE = 3600;
 
-/** A listing on `tickers[]`. Present since the 2026-09-08/09 API changes. */
+/** A listing on `tickers[]`. */
 interface ApiTicker {
   exchangeId?: number | string | null;
   exchangeName?: string | null;
@@ -40,75 +51,99 @@ interface ApiTicker {
   isin?: string | null;
 }
 
-/** A row on `contacts[]`. Replaces the always-blank `/details` contact fields. */
+/**
+ * A row on `contacts[]`.
+ *
+ * On /full this is the rich shape that used to require /api/CompContacts, and
+ * the keys are plain: `name`, `phone`, `email` — NOT the `contactName` /
+ * `contactPhone` / `contactEmail` the old detail route used. Reading the old
+ * spellings here is what would silently blank every contact card.
+ */
 interface ApiContact {
-  contactName?: string | null;
-  contactPhone?: string | null;
-  contactEmail?: string | null;
+  name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  position?: string | null;
+  fax?: string | null;
 }
 
-interface ApiCompany {
+/**
+ * `GET /api/Companies/{id}/full`.
+ *
+ * The merged company record. Note what moved relative to the old detail route:
+ * the localised names are nested under `names` and keyed by language tag rather
+ * than being four flat `companyNameXX` siblings; the logos are absolute URLs
+ * rather than bare filenames; `boilerPlate`/`extBoilerPlate` are now
+ * `boilerplate`/`boilerplateExtended`; and the socials and address have their
+ * own nested blocks.
+ */
+interface ApiCompanyFull {
   companyId: number;
   /**
-   * The detail endpoint was reported returning `companyName` on 2026-09-09,
-   * while the schema capture in docs/api-schemas/company.csv — taken 2026-09-07,
-   * before the API changed — shows `companyNameEN` populated on the same
-   * endpoint. Both are declared and both are read, so the page renders a real
-   * name under either shape rather than betting on one. This is the bug behind
-   * every company page rendering "Company {id}" as its h1.
+   * `names.en` is the company's English name and is always populated. This
+   * replaces the companyName/companyNameEN guessing the old detail route
+   * forced — the two spellings disagreed between endpoints, which is the bug
+   * behind every company page once rendering "Company {id}" as its h1.
    */
-  companyName?: string | null;
-  companyNameEN?: string | null;
-  companyNameCH: string | null;
-  companyNameCT: string | null;
-  companyNameJP: string | null;
-  companyNameKO: string | null;
-  logoFilename: string | null;
-  topLogoFilename: string | null;
-  boilerPlate: string | null;
-  extBoilerPlate: string | null;
+  names?: {
+    en?: string | null;
+    ja?: string | null;
+    zhHans?: string | null;
+    zhHant?: string | null;
+    ko?: string | null;
+  } | null;
   url: string | null;
+  urlJa: string | null;
+  /** Absolute URLs. The wire used to send bare filenames to prefix. */
+  logoArticle: string | null;
+  logoTop: string | null;
+  boilerplate: string | null;
+  boilerplateExtended: string | null;
   /**
    * Full industry names.
    *
-   * The wire sends objects keyed `name` — `{ compId, id, name, description }`,
-   * verified on company 82, 2026-09-10. `sectorName` was the key this code
-   * declared and read, and it has never been returned here (C-M1); it is kept
-   * in the union as a tolerated fallback, not as the expected shape. The plain
-   * string form is likewise defensive rather than observed.
+   * Objects keyed `name` — `{ compId, id, name, description }`. `sectorName` is
+   * kept in the union as a tolerated fallback because it is the key the article
+   * endpoints use for their own coarser sector field; it has never been
+   * returned here. The plain string form is likewise defensive, not observed.
    *
    * `id` is deliberately not declared: it belongs to a taxonomy that is NOT the
-   * one in src/lib/sectors.ts, so nothing here should be tempted to match on it.
-   * See buildIndustry.
+   * one in src/lib/sectors.ts, so nothing here should be tempted to match on
+   * it. See buildIndustry.
    */
   sectors?: (string | { name?: string | null; sectorName?: string | null })[] | null;
   tickers?: ApiTicker[] | null;
   contacts?: ApiContact[] | null;
-  /** Bloomberg quote codes. Shape unverified — read defensively. */
-  bloomberg?: (string | { code?: string | null; bloombergCode?: string | null })[] | null;
-}
-
-interface ApiCompanyDetails {
-  established: string;
-  listed: string;
-  employees: string;
-  dunsNumber: string;
-  otc: string;
-  marketId: string;
-  urlJa: string;
-  blog: string;
-  facebook: string;
-  twitter: string;
-  linkedIn: string;
-  youTube: string;
-  telegram: string;
-  addr1: string;
-  addr2: string;
-  addr3: string;
-  addr4: string;
-  telephone: string;
-  facsimile: string;
-  email: string;
+  /** Verified on companies 82 and 574: `{ compId, id, bloombergCode, name }`. */
+  bloombergCodes?: (string | { bloombergCode?: string | null; code?: string | null })[] | null;
+  /** One object, replacing the six flat social fields on /details. */
+  socials?: {
+    blog?: string | null;
+    facebook?: string | null;
+    twitter?: string | null;
+    youtube?: string | null;
+    linkedin?: string | null;
+    telegram?: string | null;
+  } | null;
+  /**
+   * The former /details payload.
+   *
+   * Every field here except `marketId` came back null on all the companies
+   * sampled, before and after the merge — the client does not supply it. Read,
+   * but never relied on; the curated file is what actually fills these rows.
+   */
+  profile?: {
+    established?: string | null;
+    listedDate?: string | null;
+    employees?: string | null;
+    otc?: string | null;
+    telephone?: string | null;
+    facsimile?: string | null;
+    addressStreet?: string | null;
+    addressDistrict?: string | null;
+    addressCity?: string | null;
+    addressCountry?: string | null;
+  } | null;
 }
 
 export interface CompanyTicker {
@@ -236,11 +271,6 @@ async function getJson<T>(url: string): Promise<Outcome<T>> {
   }
 }
 
-/** Convenience for the calls where a failure genuinely is just "no data". */
-async function getJsonOrNull<T>(url: string): Promise<T | null> {
-  const outcome = await getJson<T>(url);
-  return outcome.status === 'ok' ? outcome.data : null;
-}
 
 /**
  * Full industry names off `sectors[]`, which may hold strings or objects.
@@ -272,7 +302,7 @@ async function getJsonOrNull<T>(url: string): Promise<T | null> {
  * API's sector ids are a different taxonomy; see AC-M1 in
  * contracts/company.before.json.
  */
-function buildIndustry(company: ApiCompany): string | null {
+function buildIndustry(company: ApiCompanyFull): string | null {
   if (!Array.isArray(company.sectors)) return null;
 
   const names = company.sectors
@@ -285,30 +315,38 @@ function buildIndustry(company: ApiCompany): string | null {
   return [...new Set(names)].join(', ') || null;
 }
 
-function buildContacts(company: ApiCompany): CompanyContact[] {
+function buildContacts(company: ApiCompanyFull): CompanyContact[] {
   if (!Array.isArray(company.contacts)) return [];
 
   return company.contacts
     .map(c => ({
-      name: clean(c?.contactName),
-      phone: clean(c?.contactPhone),
-      email: clean(c?.contactEmail),
+      name: clean(c?.name),
+      phone: clean(c?.phone),
+      email: clean(c?.email),
     }))
     // A contact with no name, phone or email is an empty row upstream, not a
     // person; rendering it would print a blank line in the card.
     .filter(c => c.name || c.phone || c.email);
 }
 
-function buildSocials(details: ApiCompanyDetails | null): { label: string; url: string }[] {
-  if (!details) return [];
-  const candidates: [string, string | null][] = [
-    ['Website (JP)', details.urlJa],
-    ['Facebook', details.facebook],
-    ['X', details.twitter],
-    ['LinkedIn', details.linkedIn],
-    ['YouTube', details.youTube],
-    ['Telegram', details.telegram],
-    ['Blog / RSS', details.blog],
+/**
+ * The social links, now off the nested `socials` object.
+ *
+ * Two things changed with the merge and both are easy to get wrong: the casing
+ * is flat lowercase (`youtube`, `linkedin`) where /details used `youTube` and
+ * `linkedIn`, and `urlJa` is a sibling of `socials` rather than a member of it.
+ * The display order and labels are unchanged.
+ */
+function buildSocials(company: ApiCompanyFull): { label: string; url: string }[] {
+  const socials = company.socials;
+  const candidates: [string, string | null | undefined][] = [
+    ['Website (JP)', company.urlJa],
+    ['Facebook', socials?.facebook],
+    ['X', socials?.twitter],
+    ['LinkedIn', socials?.linkedin],
+    ['YouTube', socials?.youtube],
+    ['Telegram', socials?.telegram],
+    ['Blog / RSS', socials?.blog],
   ];
 
   return candidates
@@ -317,16 +355,19 @@ function buildSocials(details: ApiCompanyDetails | null): { label: string; url: 
 }
 
 /**
- * Bloomberg codes off `bloomberg[]`. The array's element shape is not verified —
- * it was named in the 2026-09-09 probe without a field list, and the API has
- * been unreachable since — so a string element and the two plausible object
- * spellings are all accepted, and anything else is skipped rather than rendered
- * as "[object Object]".
+ * Bloomberg codes off `bloombergCodes[]` — renamed from `bloomberg[]` by the
+ * merge, and now with a verified element shape:
+ *
+ *   { compId: 82, id: 73, bloombergCode: "ASIA", name: "Asia, Pacific Rim" }
+ *
+ * The string and `code` forms are kept as tolerated fallbacks rather than
+ * expected shapes. Anything else is skipped rather than rendered as
+ * "[object Object]".
  */
-function buildQuoteCodes(company: ApiCompany): { label: string; value: string }[] {
-  if (!Array.isArray(company.bloomberg)) return [];
+function buildQuoteCodes(company: ApiCompanyFull): { label: string; value: string }[] {
+  if (!Array.isArray(company.bloombergCodes)) return [];
 
-  const values = company.bloomberg
+  const values = company.bloombergCodes
     .map(b => (typeof b === 'string' ? clean(b) : clean(b?.bloombergCode ?? b?.code)))
     .filter((v): v is string => v !== null);
 
@@ -342,7 +383,7 @@ function buildQuoteCodes(company: ApiCompany): { label: string; value: string }[
  * override.
  */
 function buildTickers(
-  company: ApiCompany,
+  company: ApiCompanyFull,
   curated: CuratedCompanyProfile,
 ): { tickers: CompanyTicker[]; fromApi: boolean } {
   if (curated.tickers?.length) return { tickers: curated.tickers, fromApi: false };
@@ -429,7 +470,7 @@ export async function fetchCompanyProfile(
   const id = Number(companyId);
   if (!Number.isFinite(id) || id <= 0) return null;
 
-  const outcome = await getJson<ApiCompany>(`${NEW_API_BASE}/api/Companies/${id}`);
+  const outcome = await getJson<ApiCompanyFull>(`${NEW_API_BASE}/api/Companies/${id}/full`);
 
   // The API answered and does not know this id: a genuine 404.
   if (outcome.status === 'missing') return null;
@@ -441,16 +482,14 @@ export async function fetchCompanyProfile(
   const company = outcome.data;
   if (typeof company.companyId !== 'number') return null;
 
-  // See the companyName/companyNameEN note on ApiCompany: read both.
-  const name = pick(company.companyName, company.companyNameEN) ?? `Company ${id}`;
+  const name = clean(company.names?.en) ?? `Company ${id}`;
   const curated = curatedProfileFor(id);
+  const profile = company.profile;
 
-  const details = await getJsonOrNull<ApiCompanyDetails>(
-    `${NEW_API_BASE}/api/Companies/${id}/details`,
-  );
-
+  // Named fields now, in the order they read as an address. The old positional
+  // addr1..addr4 said nothing about what each line held.
   const headquarters = (
-    [details?.addr1, details?.addr2, details?.addr3, details?.addr4]
+    [profile?.addressStreet, profile?.addressDistrict, profile?.addressCity, profile?.addressCountry]
       .map(clean)
       .filter((line): line is string => line !== null)
   );
@@ -459,7 +498,7 @@ export async function fetchCompanyProfile(
 
   const contacts = buildContacts(company);
   const { tickers, fromApi } = buildTickers(company, curated);
-  const otc = pick(details?.otc, curated.otc);
+  const otc = pick(profile?.otc, curated.otc);
 
   // The exchange name and the quote codes describe the listing we are showing.
   // When curated tickers are displayed instead, they may describe a different
@@ -472,12 +511,13 @@ export async function fetchCompanyProfile(
   // curated as unlisted stays unlisted no matter what the article row claims.
   const isListed = curated.isListed ?? (tickers.length > 0 || otc !== null);
 
-  const description = toParagraphs(company.boilerPlate);
-  const established = pick(details?.established, curated.established);
+  const description = toParagraphs(company.boilerplate);
+  const established = pick(profile?.established, curated.established);
+  // `listedDate` on /full; it was `listed` on the old /details route.
   const listed = curated.isListed === false
     ? null
-    : pick(details?.listed, curated.listed);
-  const employees = pick(details?.employees, curated.employees);
+    : pick(profile?.listedDate, curated.listed);
+  const employees = pick(profile?.employees, curated.employees);
   // Curated first here, against the usual precedence: sectors[] is ACN's own
   // newswire taxonomy ("Business"), not the company's industry. Where we have a
   // company-sourced description of what it does, that is the better answer; the
@@ -491,12 +531,13 @@ export async function fetchCompanyProfile(
     id,
     name,
     names: {
-      ch: clean(company.companyNameCH),
-      ct: clean(company.companyNameCT),
-      jp: clean(company.companyNameJP),
-      ko: clean(company.companyNameKO),
+      ch: clean(company.names?.zhHans),
+      ct: clean(company.names?.zhHant),
+      jp: clean(company.names?.ja),
+      ko: clean(company.names?.ko),
     },
-    logoSrc: company.logoFilename ? `${LOGO_BASE}${company.logoFilename}` : null,
+    // Absolute on the wire now - this used to be a bare filename needing a host.
+    logoSrc: clean(company.logoArticle),
     description,
     established,
     listed,
@@ -508,10 +549,10 @@ export async function fetchCompanyProfile(
     // Deliberately NOT filled from contacts[0].phone: the named contacts render
     // their own rows, and folding the first one in here prints the same number
     // twice on every company that has one.
-    telephone: pick(details?.telephone, curated.telephone),
-    facsimile: pick(details?.facsimile, curated.facsimile),
+    telephone: pick(profile?.telephone, curated.telephone),
+    facsimile: pick(profile?.facsimile, curated.facsimile),
     contacts,
-    socials: buildSocials(details),
+    socials: buildSocials(company),
     isListed,
     tickers,
     exchangeName: isListed && fromApi ? exchangeName : null,

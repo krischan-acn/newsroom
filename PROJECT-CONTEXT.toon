@@ -4,13 +4,13 @@ meta:
   read_first: "BIBLE.md, NOT this file. BIBLE.md is the contract and points here for route/service/API detail."
   companions: "BIBLE.md (the rules), COMPONENTS.toon (generated component inventory), STYLING.toon (the visual contract)"
   format: TOON
-  updated: 2026-09-16
+  updated: 2026-09-23
   cadence: "twice monthly"
-  next_review: 2026-09-22
+  next_review: 2026-10-07
   scope: "This repo is the frontend portal ONLY. The API is a separate .NET repo (acnnewswire-api) not present here."
   rot_warning: "Sections api_health, blockers and current_steps go stale fastest - re-verify those every update. Structure sections (routes, services) change slowly. COMPONENT structure is no longer described here at all: COMPONENTS.toon is generated from the import graph and cannot go stale."
   refresh_how: "Probe api_health with curl against the swagger list; re-read docs/api-schemas/_gaps.csv; re-run git log since the updated date above. Component rows need no refresh - run npm run components:map instead."
-  last_change: "2026-09-16 - src/components re-tiered into common/ shared/ features/, the four hand-rolled rail <aside> blocks unified behind <Rail>, events listing buttons moved onto .button.alt, press-release types moved to src/types/."
+  last_change: "2026-09-23 - migrated onto the new /full API routes. services/events.ts reads /api/Events/full and /api/Events/{id}/full (one request, no page sweep, no unstable_cache, no date/url/image repair); services/company-profile.ts reads /api/Companies/{id}/full (one request, was two). App-facing models deliberately UNCHANGED. /api/Sectors probed but not wired - see docs/sectors-probe-2026-09-23.md."
 
 project:
   name: acn-newswire-portal
@@ -67,26 +67,32 @@ api_hosts[5]{role,host,note}:
   event_images,https://www.acnnewswire.com/eventimages,"NOT whitelisted in next.config.ts - next/image would reject these"
 
 api_health:
-  probed: 2026-09-10
-  probed_prev: 2026-09-08
-  summary: "New API host is UP (swagger 200, 13 paths). The Sectors 500 on press-release/{id} and by-company/{id} is FIXED - articles and company feeds work again. Events/{id} still 500s on the same bug class. Legacy API host is still fully DOWN (503). NEW ON 2026-09-10: the Events ARCHIVE IS GONE - the list returns 7 upcoming rows instead of 839, with compId null and companies[] empty on every one."
-  changed_since_2026_09_08: "Four rows below were re-probed and corrected on 2026-09-10: /api/Events (839 -> 7), /api/Articles (the dev DB is no longer a stale snapshot), /api/Articles/search (not empty - it returns a flat 34-key JOIN row), and events_caution. Everything else re-verified as still true. Full before/after payloads for four wire surfaces are in ../contracts/; the service-layer fixes that came out of it are in docs/api-response-fixes-2026-09-16.md."
-  events_caution: "CORRECTED 2026-09-10: there are no longer 839 events. The list now returns 7, all upcoming, and an unpaged call returns the full set. The pageSize advice below still holds if the archive is restored - the default page is 10, which is what led an earlier pass to record 'only 10 events, all 2007-2009'."
-  probe_note: "Probe with REAL ids from the list endpoints (articles 106624-106708, companies 14/82/574, events 17-23/163/177/178) - a 404 from a missing record otherwise reads as breakage."
-  endpoints[13]{path,host,status,detail}:
-    /swagger/v1/swagger.json,new,200,"API is alive, 13 paths published (was 15 - CompContacts and the two Companies sub-paths reshuffled)"
-    /api/Articles,new,200,"works. CORRECTED 2026-09-10: the dev DB is NO LONGER a stale partial snapshot - article 109894 is dated 2026-09-08 and event releases run to 2026-09-11. 80,602 articles over 807 pages. CAUTION: SecId and ArtType are accepted and SILENTLY IGNORED - filtered results are byte-identical to unfiltered, so a filter built on either looks like it works and does not. Only HasThumbnail filters. Cid is a SOURCE id, not a company id"
+  probed: 2026-09-23
+  probed_prev: 2026-09-10
+  summary: "The API team SHIPPED the contracts/ reconciliation. Four new paths (17, was 13): /api/Events/full, /api/Events/{id}/full, /api/Companies/{id}/full and /api/Sectors. The events ARCHIVE IS BACK - 816 published of 839, with organisers populated - and /api/Events/{id}/full is a working single-event read at last. The plaintext username/password leak is FIXED on every company route. This repo now reads /api/Events/full and /api/Companies/{id}/full; see services below. Legacy API host still fully DOWN (503)."
+  changed_since_2026_09_10: "Everything under `new` was re-probed on 2026-09-23. The /full routes are the contracts/*.after.json shapes delivered as SEPARATE paths rather than as changes to the originals, so both shapes are live and the old quirks persist on the old paths - /api/Events still ships 2.65MB with the 167-times organiser repetition, and /api/Events/{id} still 500s. Nothing was removed. The service-layer cutover is in git; the sector comparison is in docs/sectors-probe-2026-09-23.md."
+  full_routes_caution: "The /full projections are PUBLISHED-ONLY. /api/Events/full returns 816 rows, not 839: the 23 events the wire marks unpublished (ids 75 112 113 121 140 152 191 194 195 196 198 201 204 207 208 209 307 405 436 487 755 856 858) are absent, and 404 on /api/Events/{id}/full. Correct for this site, which shows published events only. acn-admin still sweeps the legacy /api/Events alongside /full for exactly this reason."
+  events_caution: "SUPERSEDED 2026-09-23. The archive is restored: 839 rows on the legacy path, 816 published on /full, spanning 2007-11-18 to 2026-12-02. compId/organiserId is populated on 108 of them - null on the other 708, which is the real shape of the data rather than a fault. The 167-times organiser repetition is gone from /full (deduped server-side) and still present on the legacy path. PageSize on /api/Events/full is NOT capped at 100."
+  probe_note: "Probe with REAL ids from the list endpoints (articles 106624-106708, companies 14/82/574, events 17-23/163/177/178) - a 404 from a missing record otherwise reads as breakage. The dev host 403s a bare urllib/python User-Agent; curl works."
+  endpoints[17]{path,host,status,detail}:
+    /swagger/v1/swagger.json,new,200,"API is alive, 17 paths published (was 13). The four new ones are the three /full projections plus /api/Sectors"
+    /api/Articles,new,200,"works. 80,602 articles over 807 pages. CAUTION: SecId and ArtType are accepted and SILENTLY IGNORED - filtered results are byte-identical to unfiltered, so a filter built on either looks like it works and does not. Only HasThumbnail filters. Cid is a SOURCE id, not a company id"
     /api/Articles/homepage,new,200-EMPTY,"returns [] so news-list.ts deliberately reads /api/Articles instead"
-    /api/Articles/by-industry,new,200,"FIXED-ish: was recorded 200-EMPTY, but it 400s without the REQUIRED industry param and returns real rows with it"
-    /api/Articles/search,new,200,"CORRECTED 2026-09-10: it does NOT return [] - it returns a flat 34-key article x company x exchange JOIN row with no companies[] and no images[] at all, which is a different shape from every other article endpoint. Page is ignored: a fixed 10-row window comes back every time. Takes ExchangeId/SectorName/CompanyName/TickerId/Country - there is still NO keyword param, so it cannot back /search"
-    /api/Articles/press-release/{id},new,200,"FIXED 2026-09-08 (was 500 Sectors). sectors now arrives as a real ARRAY, not a JSON-encoded string - closes gap ART-01"
-    /api/Articles/by-company/{id},new,200,"FIXED 2026-09-08 (was 500 Sectors). pageNumber/pageSize paginate correctly - verified pages 1/2/3 and pageSize=100"
-    /api/Companies,new,200,"works, and takes Page/Size - a company directory IS now possible, contra not_built_at_all.company_directory"
-    /api/Companies/{id},new,200,works
-    /api/Companies/{id}/details,new,200,works
-    /api/Events,new,200-DEGRADED,"CORRECTED 2026-09-10: returns 7 rows, all upcoming, where it previously returned 839 (816 publish=y) spanning 2007-11-18 to 2026-12-02. compId is NULL and companies[] is EMPTY on every row, so no event can name its organiser or resolve a release feed - compId is the only key relating an event to its releases. Every historical event detail page now 404s; only 7 ids resolve. BACKEND-SIDE - confirm intent with the API team before changing code. The ~2.65MB full-sweep figure and the 167-times organiser repetition no longer apply while the response is this small, but both return with the archive"
-    /api/Events/{id},new,500,"STILL BROKEN. 'The required column Companies was not present' - same bug class the Articles endpoints just had fixed. Worked around: services/events.ts reads the list and filters"
-    /api/Events/company/{id}/year/{year},new,200,"works and IS the event-to-release relation - see EVT-03 below"
+    /api/Articles/by-industry,new,200,"400s without the REQUIRED industry param and returns real rows with it"
+    /api/Articles/search,new,200,"returns a flat 34-key article x company x exchange JOIN row with no companies[] and no images[], a different shape from every other article endpoint. Page is ignored: a fixed 10-row window comes back every time. Takes ExchangeId/SectorName/CompanyName/TickerId/Country - there is still NO keyword param, so it cannot back /search"
+    /api/Articles/press-release/{id},new,200,"sectors arrives as a real ARRAY, not a JSON-encoded string"
+    /api/Articles/by-company/{id},new,200,"pageNumber/pageSize paginate correctly"
+    /api/Companies,new,200,"works, takes Page/Size. Size is capped at 100 - 101 is a 400. username/password NO LONGER RETURNED"
+    /api/Companies/{id},new,200,"works. Superseded for this repo by /full. username/password NO LONGER RETURNED"
+    /api/Companies/{id}/details,new,200,"works, and is now redundant - every field it carries is on /full. Kept probed because it is still the only endpoint that could ever carry an address"
+    /api/Companies/{id}/full,new,200,"NEW. The whole company in ONE request: names{} nested by language tag, absolute logos, boilerplate + boilerplateExtended, socials{} as one object, profile{} (the former /details), sectors/tickers/bloombergCodes/rss/contacts, annualReport{}. contacts[] carries the RICH shape that used to need /api/CompContacts - HKTDC returns 63 of them. sectors and tickers are byte-identical to the detail route. No credentials. This is what company-profile.ts reads"
+    /api/CompContacts,new,200,"back in the spec (it had been reshuffled out). No longer needed by either repo - /full embeds the same rows with the same fields"
+    /api/Events,new,200,"the LEGACY shape, unchanged and still quirky: 839 rows, 2.65MB for the full sweep because the organiser repeats once per release (167 copies on the worst row), offsetless midnight dates, scheme-less url, bare-filename image, publish as the string y. Still the ONLY place the 23 unpublished events exist, which is why acn-admin still sweeps it. This repo no longer calls it"
+    /api/Events/{id},new,500,"STILL BROKEN - 'The required column Companies was not present'. The fix landed on /full, NOT here. Do not call it"
+    /api/Events/full,new,200,"NEW, and what services/events.ts now reads. The reconciled shape: name (was description), real +08:00 offsets, endDate at 23:59:59, absolute url and photo, isPublished boolean, organiserId/organisers[] deduped. 816 published rows in ONE request at 286KB - against 2.65MB for the same data on the legacy path. PageSize is UNCAPPED (2000 works). Server-side Upcoming/From/To filters, all verified"
+    /api/Events/{id}/full,new,200,"NEW. The working single-event read - closes AE-M5. 404s for an unpublished id as well as an unknown one"
+    /api/Events/company/{id}/year/{year},new,200,"works and IS the event-to-release relation. Unchanged, but it can finally resolve: organiserId now arrives populated on the 108 events that have one"
+    /api/Sectors,new,200,"NEW. 199 sectors with id, subId and ja/zh-Hans/zh-Hant/ko titles, 40KB, no paging. NOT WIRED UP - probe only, by decision. The local 76-row list is a strict subset by name, but 52 of 85 shared names disagree on id and 35 wire ids resolve to a DIFFERENT local industry. Full analysis: docs/sectors-probe-2026-09-23.md"
   legacy[2]{path,status,detail}:
     /api/v1/News/GetArticleById/{id},503,"Whole legacy host still down. Enrichment only now - supplies language, location, views, supplier, url"
     /api/v1/Company/GetNewsByCompanyId/{id},503,"NO LONGER USED - company-articles.ts was cut over to the new API on 2026-09-08"
@@ -144,8 +150,8 @@ services[12]{file,exports,upstream,on_error}:
   acn-adapter.ts,"adaptNewApiPressRelease, headlineToSlug, languageToSlug","none - pure transform","never throws; parseSectors swallows JSON.parse failures to []"
   news-list.ts,"fetchNewsList, fetchLatestNews, fetchArticlesByIndustry, fetchHeroSlides","new /api/articles/homepage and /api/Articles/by-industry","!ok -> [] but NO try/catch, so a network-level throw propagates"
   company-articles.ts,"fetchCompanyArticlesPage, fetchCompanyArticles","new /api/Articles/by-company/{id} ONLY - legacy path deleted 2026-09-08","never throws -> []. A page past the last answers 404, treated as no rows. hasNext probes page+1 with pageSize 1"
-  company-profile.ts,fetchCompanyProfile,"new Companies/{id}, Companies/{id}/details, Articles/search","never throws -> null"
-  events.ts,"fetchEvents, fetchEvent, fetchEventReleases, eventYear, EVENT_TZ_LABEL","new /api/Events (list) plus /api/Events/company/{id}/year/{year}","never throws -> [] / null. NOTE: the only service that does NOT cache at the fetch call site - the 2.4MB list response exceeds Next's 2MB cache ceiling, so unstable_cache wraps the MAPPED result (~3.5KB after deduping repeated companies) and React cache() dedupes within a render"
+  company-profile.ts,fetchCompanyProfile,"new /api/Companies/{id}/full - ONE call, was two","never throws -> null. REWRITTEN 2026-09-23. /details is gone: its socials now arrive as a nested socials{} object and its address as named addressStreet/District/City fields. Contacts keys are name/phone/email, NOT the old contactName/contactPhone/contactEmail. Localised names come from names{} by language tag and logos arrive absolute. Distinguishes missing (404) from unreachable, as before"
+  events.ts,"fetchEvents, fetchEvent, fetchEventReleases, eventYear, EVENT_TZ_LABEL","new /api/Events/full (list), /api/Events/{id}/full (detail), /api/Events/company/{id}/year/{year} (releases)","never throws -> [] / null. REWRITTEN 2026-09-23. Back on the fetch-call-site caching convention: /full returns 816 events in 286KB, under Next's 2MB ceiling, so the unstable_cache workaround the 2.65MB legacy sweep forced is GONE - React cache() alone dedupes within a render. The up-to-20-page sequential sweep is one request. The +08:00 stamping, url-scheme and image-host repair and organiser dedupe all still exist but are now no-ops the wire does upstream, kept only so a backend regression degrades instead of breaking"
   reading-mode.ts,"getReadingMode, getNextArticleId",new /api/Articles?Size=20,"-> null. revalidate 300 is set but it is CALLED FROM A CLIENT COMPONENT so the directive is ignored and the browser hits the external API directly"
   release-versions.ts,"fetchReleaseVersions, RELEASE_VERSIONS_SUPPORTED",none,"DECLARED STUB - always returns exactly [current]. Flag is false"
   search.ts,"searchArticles, getSectorDisplayName","none - imports src/data/prefetched-articles.json","synchronous, never throws"

@@ -17,9 +17,12 @@ import type { PressReleaseData } from '@/types/press-release';
 // This page used to be one `await Promise.all([...])` over fourteen calls: the
 // hero pool, the FULL events sweep, five individual press releases and nine
 // category rows. Parallel, but still a single gate - nothing reached the
-// browser until the slowest of the fourteen came back, and the slowest is
-// fetchEvents(), which pages the endpoint SEQUENTIALLY (see services/events).
-// One cold cache entry there held the entire home page blank.
+// browser until the slowest of the fourteen came back, and the slowest was
+// fetchEvents(), which swept the events endpoint SEQUENTIALLY page by page.
+// One cold cache entry there held the entire home page blank. (That sweep is
+// gone as of the /api/Events/full migration - it is one request now - but the
+// per-band Suspense split below is what keeps any ONE slow call from holding
+// the page, so it stands on its own.)
 //
 // Now each band is its own async server component behind its own Suspense
 // boundary. React still starts all of their fetches concurrently - siblings
