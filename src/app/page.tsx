@@ -43,9 +43,23 @@ async function HeroBand() {
   return <HomeHero slides={slides} />;
 }
 
+/** Upcoming events the row can show. The shelf scrolls, but nobody scrolls past this. */
+const EVENTS_ROW_LIMIT = 20;
+
+// /api/Events/full is the whole archive back to 2007 - 800+ rows. EventsRow is a
+// client component, so whatever it receives is serialised into the page's RSC
+// payload: passing the full list made up ~70% of the homepage HTML for the
+// handful of upcoming cards actually drawn. Narrow it here, on the server.
+// EventsRow still re-filters against the visitor's clock, so a cached page
+// never shows an event that has passed since it was rendered.
 async function EventsBand() {
   const events = await fetchEvents().catch((): Event[] => []);
-  return <EventsRow events={events} />;
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = events
+    .filter((e) => e.startDate >= today)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate))
+    .slice(0, EVENTS_ROW_LIMIT);
+  return <EventsRow events={upcoming} />;
 }
 
 /** The ids the featured band is curated from. Hand-picked, in display order. */
@@ -88,9 +102,12 @@ async function FeaturedBand() {
 }
 
 async function CategoryBand({ category }: { category: CategoryConfig }) {
-  const items = await fetchArticlesByIndustry(category.apiIndustry).catch(
+  const rows = await fetchArticlesByIndustry(category.apiIndustry).catch(
     (): NewsListItem[] => [],
   );
+  // CategoryRow is a client component and never renders the summary - drop it
+  // so nine rows of it do not ride along in the RSC payload.
+  const items = rows.map((item) => ({ ...item, description: null }));
   return (
     <CategoryRow
       title={category.title}

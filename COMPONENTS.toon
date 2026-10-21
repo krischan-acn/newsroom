@@ -4,7 +4,7 @@ meta:
   format: TOON
   generated_by: scripts/gen-components.mjs
   hand_edit: NEVER - regenerate with `npm run components:map`
-  generated: 2026-09-23
+  generated: 2026-10-22
   refresh: "Runs on every commit via .githooks/pre-commit. Enable once with: git config core.hooksPath .githooks"
   consumers_note: "Paths are repo-relative. A component listed against only an index.tsx barrel appears in orphans."
 
@@ -24,7 +24,7 @@ totals[5]{metric,value}:
 
 common[23]{file,runtime,lines,used_by,consumers}:
   common/Footer/Footer.tsx,server,135,1,app/layout.tsx
-  common/Footer/SocialIcon.jsx,server,34,1,components/common/Footer/Footer.tsx
+  common/Footer/SocialIcon.jsx,server,37,1,components/common/Footer/Footer.tsx
   common/ab/AbHiddenTrigger.tsx,client,18,1,components/common/nav/TopNav/index.tsx
   common/ab/AbOverlay.css,css,85,2,"components/common/ab/AbHiddenTrigger.tsx components/common/ab/AbOverlay.tsx"
   common/ab/AbOverlay.tsx,client,481,1,app/layout.tsx
@@ -54,7 +54,7 @@ features_article[11]{file,runtime,lines,used_by,consumers}:
   features/article/Body.tsx,client,60,2,"components/features/article/PressRelease.tsx components/features/article/index.tsx"
   features/article/Company.tsx,client,77,2,"components/features/article/PressRelease.tsx components/features/article/index.tsx"
   features/article/Hero.tsx,client,98,2,"components/features/article/PressRelease.tsx components/features/article/index.tsx"
-  features/article/InfiniteArticleFeed.tsx,client,165,1,components/features/article/index.tsx
+  features/article/InfiniteArticleFeed.tsx,client,163,1,components/features/article/index.tsx
   features/article/MoreFromCompany.tsx,server,45,2,"components/features/article/PressRelease.tsx components/features/article/index.tsx"
   features/article/PressRelease.tsx,server,72,2,"components/features/article/InfiniteArticleFeed.tsx components/features/article/index.tsx"
   features/article/ShareBar.tsx,client,108,2,"components/features/article/PressRelease.tsx components/features/article/index.tsx"
@@ -77,7 +77,7 @@ features_home[6]{file,runtime,lines,used_by,consumers}:
   features/home/CategoryRow.tsx,client,145,1,app/page.tsx
   features/home/EventsRow.tsx,client,88,1,app/page.tsx
   features/home/FeaturedReleases.tsx,server,108,1,app/page.tsx
-  features/home/HomeHero.tsx,client,202,1,app/page.tsx
+  features/home/HomeHero.tsx,client,206,1,app/page.tsx
   features/home/HomeSkeletons.tsx,server,92,2,"app/loading.tsx app/page.tsx"
   features/home/ShelfScrollBar.tsx,client,210,2,"components/features/home/CategoryRow.tsx components/features/home/EventsRow.tsx"
 

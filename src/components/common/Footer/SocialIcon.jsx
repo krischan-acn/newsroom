@@ -27,6 +27,9 @@ const SocialIcon = ({ platform, size = 24, className = '' }) => {
       src={src}
       alt={`${platform} icon`}
       className={className}
+      // Without this React hoists a <link rel="preload"> for every icon into
+      // <head>, ahead of the stylesheet, on every page.
+      loading="lazy"
     />
   )
 }

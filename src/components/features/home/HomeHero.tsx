@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
 import type { NewsListItem } from '@/services/news-list';
 
@@ -94,7 +95,7 @@ export function HomeHero({ slides }: { slides: NewsListItem[] }) {
         onTransitionEnd={handleTransitionEnd}
       >
         {trackSlides.map((slide, i) => (
-          <Slide key={i} data={slide} hidden={i !== active} />
+          <Slide key={i} data={slide} hidden={i !== active} eager={i === 0} />
         ))}
       </div>
 
@@ -155,7 +156,10 @@ export function HomeHero({ slides }: { slides: NewsListItem[] }) {
   );
 }
 
-function Slide({ data, hidden }: { data: NewsListItem; hidden: boolean }) {
+// Only the first slide is on screen at load. Marking every slide `priority`
+// preloaded all of them (each up to 3840w) at high priority, competing with the
+// stylesheet and the first image for the same connection.
+function Slide({ data, hidden, eager }: { data: NewsListItem; hidden: boolean; eager: boolean }) {
   const image = data.thumbImage ?? null;
   const description = data.description || '';
   // data.subHeadline ?? data.bodyText ?? 
@@ -173,7 +177,7 @@ function Slide({ data, hidden }: { data: NewsListItem; hidden: boolean }) {
             fill
             sizes="(max-width: 768px) 100vw, 50vw"
             className="object-cover"
-            priority
+            priority={eager}
           />
         )}
       </div>
@@ -186,15 +190,15 @@ function Slide({ data, hidden }: { data: NewsListItem; hidden: boolean }) {
             {description}
           </p>
         )}
-        <a
+        {/* Same tab, client-side. A new tab reloaded the whole app from scratch
+            and stranded readers who do not notice a second tab opened. */}
+        <Link
           href={`/article/${data.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
           className="button alt inline-flex w-fit items-center px-3"
           tabIndex={hidden ? -1 : 0}
         >
           Read more
-        </a>
+        </Link>
       </div>
     </div>
   );
