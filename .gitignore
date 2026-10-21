@@ -42,3 +42,11 @@ next-env.d.ts
 
 # a/b overlay local vote store
 /.ab-data/
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
