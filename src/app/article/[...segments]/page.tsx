@@ -1,9 +1,8 @@
 // app/article/[...segments]/page.tsx
 import type { Metadata } from 'next';
-import { redirect, notFound } from 'next/navigation';
-import { isRedirectError } from 'next/dist/client/components/redirect-error';
+import { notFound } from 'next/navigation';
 import { PressRelease, InfiniteArticleFeed } from '@/components/features/article';
-import { fetchPressRelease } from '@/services/press-release';
+import { fetchPressRelease, PressReleaseNotFoundError } from '@/services/press-release';
 import { fetchCompanyArticles } from '@/services/company-articles';
 import { fetchReleaseVersions } from '@/services/release-versions';
 import { headlineToSlug, languageToSlug } from '@/services/acn-adapter';
@@ -11,6 +10,16 @@ import { generateArticleMetadata, SITE_URL, SITE_NAME } from '@/lib/metadata';
 
 type Props = {
   params: Promise<{ segments: string[] }>
+}
+
+// An empty list prerenders nothing at build time but opts the route into ISR:
+// each article is rendered on its first visit, then served from cache and
+// revalidated in the background (the fetches carry revalidate: 3600). Without
+// this export the route was fully dynamic - every view, including the bare
+// /article/<id> -> canonical redirect, re-rendered on the server and re-called
+// the API, sent as Cache-Control: private, no-store, so no CDN could hold it.
+export function generateStaticParams() {
+  return [];
 }
 
 function extractId(segments: string[]): string | null {
@@ -38,25 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ArticlePage({ params }: Props) {
   const { segments } = await params;
-
-  let id: string;
-  let lang: string | undefined;
-  let slug: string | undefined;
-
-  if (segments.length === 1) {
-    [id] = segments;
-  } else if (segments.length === 2) {
-    // could be [id, slug] or [lang, id]
-    if (!isNaN(Number(segments[0]))) {
-      [id, slug] = segments;   // numeric first = id/slug
-    } else {
-      [lang, id] = segments;   // non-numeric first = lang/id
-    }
-  } else {
-    [lang, id, slug] = segments;
-  }
-
-  const numericId = Number(id);
+  const numericId = Number(extractId(segments));
   if (isNaN(numericId)) notFound();
 
   try {
@@ -64,11 +55,14 @@ export default async function ArticlePage({ params }: Props) {
     const correctSlug = headlineToSlug(data.headline, numericId);
     const correctLang = languageToSlug(data.language ?? 'english');
 
-    if (slug !== correctSlug || lang !== correctLang) {
-      redirect(`/article/${correctLang}/${id}/${correctSlug}`);
-    }
+    // No redirect to the canonical path. Every home and list link is the bare
+    // /article/<id>, and on a cached (ISR) route a redirect() cannot send a 307 -
+    // it bakes a 200 with a 1-second <meta refresh> into the page instead. The
+    // article renders at whatever URL it was asked for; generateArticleMetadata
+    // points search engines at the canonical one, and InfiniteArticleFeed
+    // rewrites the address bar to it.
 
-    // Fetch related articles after the redirect check — compId is only known from data
+    // Fetch related articles once the release is known — compId only comes from data
     const [relatedArticles, versions] = await Promise.all([
       fetchCompanyArticles(data.companies?.[0]?.comp_ID),
       fetchReleaseVersions({ id: data.id, headline: data.headline, language: data.language }),
@@ -113,7 +107,10 @@ export default async function ArticlePage({ params }: Props) {
       </>
     );
   } catch (e) {
-    if (isRedirectError(e)) throw e; // ← let Next.js handle its own redirect
-    notFound();
+    // Only a real 404 becomes notFound(). This page is cached now, so turning a
+    // timeout or a 5xx into a 404 would pin the article as missing for the whole
+    // revalidate window. Rethrowing leaves the last good copy in place instead.
+    if (e instanceof PressReleaseNotFoundError) notFound();
+    throw e;
   }
 }

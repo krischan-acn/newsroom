@@ -38,6 +38,13 @@ async function fetchLegacyArticle(id: number): Promise<LegacyApiArticle | null> 
   }
 }
 
+/**
+ * The API answered 404: the release does not exist. Kept distinct from every
+ * other failure because the article route is ISR-cached - a 404 is safe to
+ * cache, a timeout or a 5xx is not.
+ */
+export class PressReleaseNotFoundError extends Error {}
+
 export async function fetchPressRelease(id: number): Promise<PressReleaseData> {
   const [res, legacy] = await Promise.all([
     // The primary call gets the standard API deadline. The legacy enrichment
@@ -49,6 +56,9 @@ export async function fetchPressRelease(id: number): Promise<PressReleaseData> {
     fetchLegacyArticle(id),
   ]);
 
+  if (res.status === 404) {
+    throw new PressReleaseNotFoundError(`Press release ${id} not found`);
+  }
   if (!res.ok) {
     throw new Error(`API error ${res.status} for press release ${id}`);
   }
