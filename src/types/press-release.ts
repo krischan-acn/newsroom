@@ -47,3 +47,6 @@ export interface PressReleaseData {
   companies: CompanyData[];
   stock: null | any;
 }
+
+/** What /api/press-release/{id} returns: the release plus its canonical path, built server-side. */
+export type PressReleaseResponse = PressReleaseData & { urlPath: string };

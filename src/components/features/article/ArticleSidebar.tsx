@@ -16,7 +16,7 @@ import {
 import { SocialLinks, type SocialLink } from '@/components/shared/SocialLinks';
 import type { PressReleaseData } from '@/types/press-release';
 import type { ReleaseVersion } from '@/services/release-versions';
-import { RELEASE_VERSIONS_SUPPORTED } from '@/services/release-versions';
+import { RELEASE_VERSIONS_SUPPORTED } from '@/config/release-versions';
 
 interface Props {
   data: PressReleaseData;

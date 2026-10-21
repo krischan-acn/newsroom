@@ -4,8 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { PressRelease } from './PressRelease';
 import { getNextArticleId, getReadingMode } from '@/services/reading-mode';
-import { headlineToSlug, languageToSlug } from '@/services/acn-adapter';
-import type { PressReleaseData } from '@/types/press-release';
+import type { PressReleaseData, PressReleaseResponse } from '@/types/press-release';
 import type { CompanyArticle } from '@/services/company-articles';
 
 interface LoadedArticle {
@@ -63,7 +62,9 @@ export function InfiniteArticleFeed({ firstId, firstArticle }: Props) {
           return;
         }
 
-        const data: PressReleaseData = await dataRes.json();
+        // The path comes from the server: slugs need `transliteration`, which is
+        // too heavy to ship to the browser just to build a URL.
+        const { urlPath, ...data }: PressReleaseResponse = await dataRes.json();
 
         const compId = data.companies?.[0]?.comp_ID ?? '';
         const relatedRes = await fetch(`/api/company-articles/${compId}`);
@@ -71,9 +72,6 @@ export function InfiniteArticleFeed({ firstId, firstArticle }: Props) {
           ? await relatedRes.json()
           : [];
 
-        const slug = headlineToSlug(data.headline, data.id);
-        const lang = languageToSlug(data.language ?? 'english');
-        const urlPath = `/article/${lang}/${data.id}/${slug}`;
 
         loadedIds.current.add(nextId);
         setArticles(prev => [...prev, { data, relatedArticles, urlPath }]);

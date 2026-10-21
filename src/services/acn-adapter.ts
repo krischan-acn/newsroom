@@ -1,11 +1,19 @@
 // services/acn-adapter.ts
 // Converts new development API shape → PressReleaseData.
+//
+// Server-only: `transliteration` carries its character tables with it
+// (~230KB of client JS when InfiniteArticleFeed imported this file). Client
+// code gets finished paths from the server instead - /api/press-release adds
+// `urlPath` for exactly that.
+
+import 'server-only';
 
 import type { NewApiPressRelease, LegacyApiArticle } from './acn-api.types';
 import type { PressReleaseData } from '@/types/press-release';
 import { slugify } from 'transliteration';
 import { sanitizeText, sanitizeHeadline } from '@/lib/sanitize';
 import { slugFor } from '@/lib/languages';
+import { romanizeKana } from '@/lib/romanize-kana';
 
 const LOGO_BASE = 'https://www.acnnewswire.com/images/company/';
 
@@ -108,13 +116,47 @@ export function languageToSlug(language: string): string {
   return slugFor(language);
 }
 
-// Utility: clean SEO slug from headline
-// Falls back to press-release-{id} for non-Latin titles
+const SLUG_MAX = 80;
+
+// A CJK character directly against Latin text or a digit. `transliteration`
+// does not break there, so ESPN联合 became "espnlian-he" and 2026年 "2026nian".
+const CJK_THEN_LATIN = /([\p{Script=Han}\p{Script=Hangul}])(?=[A-Za-z0-9])/gu;
+const LATIN_THEN_CJK = /([A-Za-z0-9])(?=[\p{Script=Han}\p{Script=Hangul}])/gu;
+
+/**
+ * URL slug for a headline, in Latin script whatever the headline's language.
+ * Cosmetic only: the article route resolves by id, so any slug still lands on
+ * the right release.
+ *
+ * - Kana goes through Hepburn first (lib/romanize-kana) - transliteration's own
+ *   kana output is not something a Japanese reader would recognise.
+ * - Only a-z and 0-9 survive; dots and other punctuation become word breaks
+ *   (U.S. Polo Assn. -> u-s-polo-assn).
+ * - Long slugs are cut at the last word break before SLUG_MAX rather than
+ *   mid-word, and never end on a hyphen.
+ */
 export function headlineToSlug(headline: string, id: number): string {
-  const slug = slugify(headline, {
+  const spaced = romanizeKana(headline)
+    .replace(CJK_THEN_LATIN, '$1 ')
+    .replace(LATIN_THEN_CJK, '$1 ');
+
+  let slug = slugify(spaced, {
     lowercase: true,
     trim: true,
-  }).slice(0, 80);
+    allowedChars: 'a-zA-Z0-9',
+  });
+
+  if (slug.length > SLUG_MAX) {
+    const cut = slug.lastIndexOf('-', SLUG_MAX);
+    // A single word longer than half the budget is cut hard rather than dropped.
+    slug = cut > SLUG_MAX / 2 ? slug.slice(0, cut) : slug.slice(0, SLUG_MAX);
+  }
+  slug = slug.replace(/^-+|-+$/g, '');
 
   return slug.length > 5 ? slug : `press-release-${id}`;
+}
+
+/** Canonical path of an article. Server-side only - see the note on transliteration above. */
+export function articlePath(article: { id: number; headline: string; language?: string | null }): string {
+  return `/article/${languageToSlug(article.language ?? 'english')}/${article.id}/${headlineToSlug(article.headline, article.id)}`;
 }
