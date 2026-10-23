@@ -16,7 +16,7 @@ files, and this tells you which one to open and when.
 | **[STYLING.toon](STYLING.toon)** | before writing any markup or class name | hand-written — check `updated:` |
 | **[PROJECT-CONTEXT.toon](PROJECT-CONTEXT.toon)** | before touching routes, services or the API | hand-written — `api_health`, `blockers` and `current_steps` rot fast |
 
-`README.md` is **stale** — roughly 12 of its claims are false. Trust it for nothing.
+`README.md` was rewritten on 2026-10-23 and is now a one-screen pointer. `AGENTS.md` holds the principles, hosting and gotchas; the acn-docs site holds everything else.
 
 ---
 
